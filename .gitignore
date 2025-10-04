@@ -229,6 +229,6 @@ marimo/_static/
 marimo/_lsp/
 __marimo__/
 
-.lint_format.bat
-.flake8
-.activate-vens.ps1
+lint_format.bat
+flake8
+activate-vens.ps1
