@@ -38,14 +38,38 @@
 <!-- 🔹 Контент -->
 <div class="container">
     <div class="row">
+        <!-- 🔸 Информация о компании -->
         <div class="col-lg-9 col-md-6">
             <div class="card mb-4 shadow-sm">
                 <div class="card-body">
-                    <table class="table table-striped">
-                        <tr><td class="fw-bold w-25">Страна</td><td>USA</td></tr>
-                        <tr><td class="fw-bold">ИНН</td><td>91-1144442</td></tr>
-                        <tr><td class="fw-bold">Адрес</td><td>Redmond, WA, 98052-6399</td></tr>
-                    </table>
+                    {% if contact %}
+                        <table class="table table-striped">
+                            <tr>
+                                <td class="fw-bold w-25">Компания</td>
+                                <td>{{ contact.name }}</td>
+                            </tr>
+                            <tr>
+                                <td class="fw-bold">Телефон</td>
+                                <td>{{ contact.phone }}</td>
+                            </tr>
+                            <tr>
+                                <td class="fw-bold">Email</td>
+                                <td><a href="mailto:{{ contact.email }}">{{ contact.email }}</a></td>
+                            </tr>
+                            <tr>
+                                <td class="fw-bold">Адрес</td>
+                                <td>{{ contact.address }}</td>
+                            </tr>
+                            <tr>
+                                <td class="fw-bold">О нас</td>
+                                <td>{{ contact.about }}</td>
+                            </tr>
+                        </table>
+                    {% else %}
+                        <div class="alert alert-secondary">
+                            Контактная информация пока не добавлена.
+                        </div>
+                    {% endif %}
                 </div>
             </div>
         </div>

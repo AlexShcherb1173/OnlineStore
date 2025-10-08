@@ -1,10 +1,11 @@
-{% load static %}
+{%{% load static %}
 <!doctype html>
 <html lang="ru">
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>Skystore</title>
+    <title>SkyStore</title>
+
     <!-- ✅ Локальный Bootstrap CSS -->
     <link rel="stylesheet" href="{% static 'bootstrap-5.3.8-dist/css/bootstrap.css' %}">
     <!-- ✅ Локальный Font Awesome -->
@@ -12,18 +13,18 @@
 </head>
 <body>
 
-<!-- 🔹 Шапка (Navbar) -->
+<!-- 🔹 Navbar -->
 <nav class="navbar navbar-expand-lg navbar-dark bg-primary">
     <div class="container">
-        <a class="navbar-brand fw-bold" href="home.html">SkyStore</a>
+        <a class="navbar-brand fw-bold" href="{% url 'home' %}">SkyStore</a>
         <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav"
                 aria-controls="navbarNav" aria-expanded="false" aria-label="Переключить меню">
             <span class="navbar-toggler-icon"></span>
         </button>
         <div class="collapse navbar-collapse" id="navbarNav">
             <ul class="navbar-nav ms-auto mb-2 mb-lg-0">
-                <li class="nav-item"><a class="nav-link active" href="home.html">Каталог</a></li>
-                <li class="nav-item"><a class="nav-link" href="contacts.html">Контакты</a></li>
+                <li class="nav-item"><a class="nav-link active" href="{% url 'home' %}">Каталог</a></li>
+                <li class="nav-item"><a class="nav-link" href="{% url 'contacts' %}">Контакты</a></li>
             </ul>
             <form class="d-flex ms-lg-3" role="search">
                 <input class="form-control me-2" type="search" placeholder="Поиск">
@@ -35,34 +36,37 @@
 
 <!-- 🔹 Header -->
 <div class="pricing-header px-3 py-5 mx-auto text-center">
-    <h1 class="display-4">Skystore</h1>
-    <p class="lead">Skystore — удобный маркетплейс плагинов, утилит и примеров кода для разработчиков.</p>
+    <h1 class="display-4">SkyStore</h1>
+    <p class="lead">Удобный маркетплейс плагинов, утилит и решений для разработчиков.</p>
 </div>
 
-<!-- 🔹 Контент -->
-<div class="container">
-    <div class="row text-center">
-        <div class="col-md-4">
-            <div class="card mb-4 shadow-sm">
-                <div class="card-header bg-light">
-                    <h4 class="my-0">Удобный сервис рассылок</h4>
-                </div>
-                <div class="card-body">
-                    <h1 class="card-title pricing-card-title">$140</h1>
-                    <ul class="list-unstyled mt-3 mb-4 text-start m-3">
-                        <li>✔ Неограниченная лицензия</li>
-                        <li>✔ Поддержка</li>
-                        <li>✔ Установка на сервер</li>
-                        <li>✔ Получение обновлений</li>
-                    </ul>
-                    <button type="button" class="btn btn-lg btn-primary w-100">Купить</button>
+<!-- 🔹 Блок последних продуктов -->
+<div class="container my-5">
+    <h2 class="mb-4 text-center">🆕 Последние товары</h2>
+    <div class="row row-cols-1 row-cols-md-3 row-cols-lg-5 g-4">
+        {% for product in latest_products %}
+            <div class="col">
+                <div class="card h-100 shadow-sm">
+                    {% if product.image %}
+                        <img src="{{ product.image.url }}" class="card-img-top" alt="{{ product.name }}">
+                    {% else %}
+                        <img src="https://picsum.photos/300?random={{ forloop.counter }}" class="card-img-top" alt="{{ product.name }}">
+                    {% endif %}
+                    <div class="card-body">
+                        <h5 class="card-title">{{ product.name }}</h5>
+                        <p class="card-text text-muted small mb-2">{{ product.category.name }}</p>
+                        <p class="fw-bold fs-5">{{ product.price }} ₽</p>
+                        <p class="text-truncate">{{ product.description }}</p>
+                    </div>
                 </div>
             </div>
-        </div>
+        {% empty %}
+            <p class="text-center text-muted">Пока нет добавленных товаров.</p>
+        {% endfor %}
     </div>
 </div>
 
-<!-- 🔹 Футер -->
+<!-- 🔹 Footer -->
 <footer class="bg-dark text-white pt-5 pb-3 mt-5">
     <div class="container">
         <div class="row">
@@ -70,7 +74,6 @@
                 <h5 class="fw-bold">SkyStore</h5>
                 <p class="text-muted">Ваш магазин цифровых решений</p>
 
-                <!-- Соцсети -->
                 <div class="d-flex gap-3 mb-3">
                     <a href="https://t.me/" target="_blank" class="text-white-50 fs-4"><i class="fab fa-telegram"></i></a>
                     <a href="https://github.com/" target="_blank" class="text-white-50 fs-4"><i class="fab fa-github"></i></a>
@@ -102,13 +105,14 @@
             <div class="col-6 col-md">
                 <h5>О нас</h5>
                 <ul class="list-unstyled">
-                    <li><a class="text-white-50" href="contacts.html">Контакты</a></li>
+                    <li><a class="text-white-50" href="{% url 'contacts' %}">Контакты</a></li>
                     <li><a class="text-white-50" href="#">О компании</a></li>
                 </ul>
             </div>
         </div>
     </div>
 </footer>
+
 <!-- ✅ Bootstrap JS -->
 <script src="{% static 'bootstrap-5.3.8-dist/js/bootstrap.bundle.js' %}"></script>
 </body>

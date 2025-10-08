@@ -1,14 +1,21 @@
 from django.shortcuts import render
 from .forms import ContactForm
+from catalog.models import Contact
 
 
 # Create your views here.
 def home_view(request):
-    """Контроллер для главной страницы
-    Аргументы: request (HttpRequest): объект запроса от клиента.
-    Возвращает: HttpResponse: отрендеренный шаблон home.html."""
+    """Контроллер для главной страницы.
+    Отображает последние 5 добавленных продуктов."""
+    latest_products = Product.objects.order_by('-created_at')[:5]
+    print("🆕 Последние продукты:")
+    for p in latest_products:
+        print(f"- {p.name} ({p.price} руб.)")
 
-    return render(request, "home.html")
+    context = {
+        "latest_products": latest_products,
+    }
+    return render(request, "home.html", context)
 
 
 def contacts_view(request):
@@ -47,3 +54,9 @@ def contacts_view(request):
     return render(
         request, "contacts.html", {"form": form, "success_message": success_message}
     )
+
+def contacts_view(request):
+    """Контроллер для страницы "Контакты".
+    Выводит данные из модели Contact."""
+    contact = Contact.objects.first()  # получаем первую (и обычно единственную) запись
+    return render(request, "contacts.html", {"contact": contact})
