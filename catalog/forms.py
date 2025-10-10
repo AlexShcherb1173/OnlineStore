@@ -1,4 +1,5 @@
 from django import forms
+from .models import Product
 
 
 class ContactForm(forms.Form):
@@ -39,3 +40,23 @@ class ContactForm(forms.Form):
     """Поле для ввода текста сообщения.
         - label: отображаемая метка поля ("Сообщение")
         - widget: HTML <textarea> со стилем Bootstrap и placeholder"""
+
+
+class ProductForm(forms.ModelForm):
+    """Форма для добавления нового товара.
+    Поля соответствуют модели Product."""
+
+    class Meta:
+        model = Product
+        fields = ["name", "description", "image", "category", "price"]
+        widgets = {
+            "name": forms.TextInput(
+                attrs={"class": "form-control", "placeholder": "Введите название"}
+            ),
+            "description": forms.Textarea(
+                attrs={"class": "form-control", "rows": 3, "placeholder": "Описание"}
+            ),
+            "image": forms.ClearableFileInput(attrs={"class": "form-control"}),
+            "category": forms.Select(attrs={"class": "form-select"}),
+            "price": forms.NumberInput(attrs={"class": "form-control", "step": "0.01"}),
+        }

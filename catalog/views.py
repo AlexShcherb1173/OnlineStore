@@ -1,21 +1,28 @@
-from django.shortcuts import render
-from .forms import ContactForm
-from catalog.models import Contact
+from django.shortcuts import render, get_object_or_404, redirect
+from django.contrib import messages
+from django.core.paginator import Paginator
+from catalog.forms import ContactForm, ProductForm
+from catalog.models import Product
 
 
-# Create your views here.
 def home_view(request):
     """Контроллер для главной страницы.
-    Отображает последние 5 добавленных продуктов."""
-    latest_products = Product.objects.order_by('-created_at')[:5]
-    print("🆕 Последние продукты:")
-    for p in latest_products:
-        print(f"- {p.name} ({p.price} руб.)")
+    Получает список всех продуктов из БД и
+    передаёт их в шаблон для отображения.
+    Также выбирает последние 5 для консоли."""
+    products = Product.objects.select_related("category").all().order_by("-created_at")
+    # latest_products = products[:5]
+    #
+    # print("🆕 Последние добавленные продукты:")
+    # for p in latest_products:
+    #     print(f"- {p.name} ({p.price} ₽)")
+    #
+    # return render(request, "home.html", {"products": products})
+    paginator = Paginator(products, 8)  # по 8 товаров на страницу
+    page_number = request.GET.get("page")
+    page_obj = paginator.get_page(page_number)
 
-    context = {
-        "latest_products": latest_products,
-    }
-    return render(request, "home.html", context)
+    return render(request, "home.html", {"page_obj": page_obj})
 
 
 def contacts_view(request):
@@ -55,8 +62,36 @@ def contacts_view(request):
         request, "contacts.html", {"form": form, "success_message": success_message}
     )
 
-def contacts_view(request):
-    """Контроллер для страницы "Контакты".
-    Выводит данные из модели Contact."""
-    contact = Contact.objects.first()  # получаем первую (и обычно единственную) запись
-    return render(request, "contacts.html", {"contact": contact})
+
+# def contacts_view(request):
+#     """Контроллер для страницы "Контакты".
+#     Выводит данные из модели Contact."""
+#     contact = Contact.objects.first()  # получаем первую (и обычно единственную) запись
+#     return render(request, "contacts.html", {"contact": contact})
+
+
+def product_detail_view(request, pk):
+    """Контроллер для отображения одного товара.
+    Принимает pk, получает объект Product из базы данных
+    и рендерит шаблон с подробной информацией."""
+    product = get_object_or_404(Product, pk=pk)
+    return render(request, "product_detail.html", {"product": product})
+
+
+def add_product_view(request):
+    """Контроллер для добавления нового товара.
+    Обрабатывает GET (форма) и POST (сохранение)."""
+    if request.method == "POST":
+        form = ProductForm(request.POST, request.FILES)
+        if form.is_valid():
+            product = form.save()
+            messages.success(request, f"✅ Товар '{product.name}' успешно добавлен!")
+            return redirect("home")
+        else:
+            messages.error(
+                request, "⚠️ Ошибка при добавлении товара. Проверьте введённые данные."
+            )
+    else:
+        form = ProductForm()
+
+    return render(request, "add_product.html", {"form": form})
