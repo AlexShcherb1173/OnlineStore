@@ -48,18 +48,30 @@ class Command(BaseCommand):
             try:
                 call_command("loaddata", "catalog/fixtures/categories.json")
                 call_command("loaddata", "catalog/fixtures/products.json")
-                self.stdout.write(self.style.SUCCESS("✅ Данные успешно загружены из фикстур!"))
+                self.stdout.write(
+                    self.style.SUCCESS("✅ Данные успешно загружены из фикстур!")
+                )
             except Exception as e:
-                self.stdout.write(self.style.ERROR(f"❌ Ошибка при загрузке фикстур: {e}"))
+                self.stdout.write(
+                    self.style.ERROR(f"❌ Ошибка при загрузке фикстур: {e}")
+                )
             return  # 🔹 выходим — больше ничего не делаем
 
         # === 2. Создаём категории (только если не from-fixtures) ===
         self.stdout.write("📦 Создаём категории...")
         categories = [
-            Category.objects.create(name="Электроника", description="Гаджеты и техника"),
-            Category.objects.create(name="Одежда", description="Мужская и женская одежда"),
-            Category.objects.create(name="Книги", description="Печатные и электронные издания"),
-            Category.objects.create(name="Бытовая техника", description="Техника для дома"),
+            Category.objects.create(
+                name="Электроника", description="Гаджеты и техника"
+            ),
+            Category.objects.create(
+                name="Одежда", description="Мужская и женская одежда"
+            ),
+            Category.objects.create(
+                name="Книги", description="Печатные и электронные издания"
+            ),
+            Category.objects.create(
+                name="Бытовая техника", description="Техника для дома"
+            ),
         ]
 
         # === 3. Если указан --count — генерируем случайные товары ===
@@ -80,7 +92,9 @@ class Command(BaseCommand):
                     category=category,
                 )
 
-            self.stdout.write(self.style.SUCCESS(f"✅ Сгенерировано {count} продуктов!"))
+            self.stdout.write(
+                self.style.SUCCESS(f"✅ Сгенерировано {count} продуктов!")
+            )
             return
 
         # === 4. Если нет count — добавляем фиксированные тестовые данные ===
@@ -119,5 +133,7 @@ class Command(BaseCommand):
             category=appliances,
         )
 
-        self.stdout.write(self.style.SUCCESS("✅ База успешно заполнена тестовыми данными!"))
+        self.stdout.write(
+            self.style.SUCCESS("✅ База успешно заполнена тестовыми данными!")
+        )
         self.stdout.write(self.style.SUCCESS("🎉 Команда fill_db завершена успешно!"))
