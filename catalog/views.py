@@ -63,13 +63,6 @@ def contacts_view(request):
     )
 
 
-# def contacts_view(request):
-#     """Контроллер для страницы "Контакты".
-#     Выводит данные из модели Contact."""
-#     contact = Contact.objects.first()  # получаем первую (и обычно единственную) запись
-#     return render(request, "contacts.html", {"contact": contact})
-
-
 def product_detail_view(request, pk):
     """Контроллер для отображения одного товара.
     Принимает pk, получает объект Product из базы данных
