@@ -1,0 +1,30 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Удалить пост — {{ object.title }}{% endblock %}
+
+{% block content %}
+<div class="container mt-5 mb-5" style="max-width: 700px;">
+    <div class="card shadow-sm">
+        <div class="card-header bg-danger text-white">
+            <h4 class="my-2"><i class="fa-solid fa-trash"></i> Удалить пост</h4>
+        </div>
+        <div class="card-body text-center">
+            <p class="lead mb-4">
+                Вы уверены, что хотите удалить пост
+                <strong>«{{ object.title }}»</strong>?
+            </p>
+
+            <form method="post">
+                {% csrf_token %}
+                <button type="submit" class="btn btn-danger">
+                    <i class="fa-solid fa-trash-can"></i> Удалить
+                </button>
+                <a href="{% url 'blog:post_detail' object.pk %}" class="btn btn-outline-secondary ms-2">
+                    Отмена
+                </a>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}
