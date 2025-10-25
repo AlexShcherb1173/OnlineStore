@@ -1,0 +1,74 @@
+
+{% extends "base.html" %}
+{% block title %}Каталог - SkyStore{% endblock %}
+
+{% block content %}
+<div class="pricing-header px-3 py-5 mx-auto text-center">
+    <h1 class="display-4">SkyStore</h1>
+    <p class="lead">Маркетплейс цифровых решений и утилит для разработчиков.</p>
+    <a href="{% url 'add_product' %}" class="btn btn-primary mt-2">
+        <i class="fas fa-plus-circle"></i> Добавить товар
+    </a>
+</div>
+
+<div class="container my-5">
+    <h2 class="mb-4 text-center">🛍 Наши товары</h2>
+
+    <div class="row row-cols-1 row-cols-md-3 row-cols-lg-4 g-4">
+        {% for product in page_obj %}
+            <div class="col">
+                <div class="card h-100 shadow-sm">
+                    {% if product.image %}
+                        <img src="{{ product.image.url }}" class="card-img-top" alt="{{ product.name }}">
+                    {% else %}
+                        <img src="https://picsum.photos/400/300?random={{ forloop.counter }}" class="card-img-top" alt="{{ product.name }}">
+                    {% endif %}
+
+                    <div class="card-body d-flex flex-column">
+                        <h5 class="card-title">{{ product.name }}</h5>
+                        <p class="text-muted small mb-2">{{ product.category.name }}</p>
+                        <p class="card-text">{{ product.description|truncatechars:100 }}</p>
+                        <div class="mt-auto">
+                            <p class="fw-bold fs-5 mb-2">{{ product.price }} ₽</p>
+                            <a href="{% url 'product_detail' product.pk %}" class="btn btn-outline-primary w-100">Подробнее</a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        {% empty %}
+            <p class="text-center text-muted">Пока нет товаров.</p>
+        {% endfor %}
+    </div>
+
+    <!-- 🔹 Пагинация -->
+    {% if page_obj.has_other_pages %}
+        <nav aria-label="Навигация по страницам" class="mt-4">
+            <ul class="pagination justify-content-center">
+                {% if page_obj.has_previous %}
+                    <li class="page-item">
+                        <a class="page-link" href="?page={{ page_obj.previous_page_number }}">Предыдущая</a>
+                    </li>
+                {% else %}
+                    <li class="page-item disabled"><span class="page-link">Предыдущая</span></li>
+                {% endif %}
+
+                {% for num in page_obj.paginator.page_range %}
+                    {% if page_obj.number == num %}
+                        <li class="page-item active"><span class="page-link">{{ num }}</span></li>
+                    {% else %}
+                        <li class="page-item"><a class="page-link" href="?page={{ num }}">{{ num }}</a></li>
+                    {% endif %}
+                {% endfor %}
+
+                {% if page_obj.has_next %}
+                    <li class="page-item">
+                        <a class="page-link" href="?page={{ page_obj.next_page_number }}">Следующая</a>
+                    </li>
+                {% else %}
+                    <li class="page-item disabled"><span class="page-link">Следующая</span></li>
+                {% endif %}
+            </ul>
+        </nav>
+    {% endif %}
+</div>
+{% endblock %}

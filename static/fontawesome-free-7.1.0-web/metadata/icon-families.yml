@@ -15615,7 +15615,7 @@ delete-left:
   search:
     terms:
       - Erase to the Left
-      - command
+      - commands
       - delete
       - erase
       - keyboard
@@ -51943,7 +51943,7 @@ terminal:
     terms:
       - code
       - coding
-      - command
+      - commands
       - console
       - development
       - prompt
