@@ -4,88 +4,96 @@
 
 {% block content %}
 <div class="container py-5">
-    <div class="row justify-content-center">
-        <div class="col-lg-7 col-xl-6">
-            <div class="card shadow-sm">
-                <div class="card-header bg-primary text-white">
-                    <h4 class="my-0">Добавить новый товар</h4>
-                </div>
-                <div class="card-body">
-
-                    {# Сообщения Django (messages) #}
-                    {% if messages %}
-                        {% for message in messages %}
-                            <div class="alert alert-{{ message.tags }} mb-3">{{ message }}</div>
-                        {% endfor %}
-                    {% endif %}
-
-                    {# Общие ошибки формы (non_field_errors) #}
-                    {% if form.non_field_errors %}
-                        <div class="alert alert-danger mb-3">
-                            <ul class="mb-0">
-                                {% for error in form.non_field_errors %}
-                                    <li>{{ error }}</li>
-                                {% endfor %}
-                            </ul>
-                        </div>
-                    {% endif %}
-
-                    <form method="post" enctype="multipart/form-data" novalidate>
-                        {% csrf_token %}
-
-                        {# Рендерим поля по одному, чтобы показать ошибки под полем #}
-                        {% for field in form %}
-                            <div class="mb-3">
-                                <label for="{{ field.id_for_label }}" class="form-label">
-                                    {{ field.label }}
-                                    {% if field.field.required %}<span class="text-danger">*</span>{% endif %}
-                                </label>
-
-                                {# Добавляем is-invalid, если есть ошибки у поля #}
-                                {% if field.errors %}
-                                    {% if field.field.widget.attrs.class %}
-                                        {% with cls=field.field.widget.attrs.class|add:" is-invalid" %}
-                                            {{ field.as_widget(attrs={'class': cls}) }}
-                                        {% endwith %}
-                                    {% else %}
-                                        {{ field.as_widget(attrs={'class': 'form-control is-invalid'}) }}
-                                    {% endif %}
-                                {% else %}
-                                    {# Без ошибок — просто добавим базовый класс, если его нет #}
-                                    {% if field.field.widget.attrs.class %}
-                                        {{ field }}
-                                    {% else %}
-                                        {{ field.as_widget(attrs={'class': 'form-control'}) }}
-                                    {% endif %}
-                                {% endif %}
-
-                                {# Подсказка под полем (help_text) #}
-                                {% if field.help_text %}
-                                    <div class="form-text">{{ field.help_text|safe }}</div>
-                                {% endif %}
-
-                                {# Ошибки конкретного поля #}
-                                {% if field.errors %}
-                                    <div class="invalid-feedback d-block">
-                                        <ul class="mb-0">
-                                            {% for error in field.errors %}
-                                                <li>{{ error }}</li>
-                                            {% endfor %}
-                                        </ul>
-                                    </div>
-                                {% endif %}
-                            </div>
-                        {% endfor %}
-
-                        <button type="submit" class="btn btn-success w-100 mt-2">Сохранить</button>
-                    </form>
-
-                    <a href="{% url 'home' %}" class="btn btn-outline-secondary w-100 mt-3">
-                        <i class="fas fa-arrow-left"></i> Вернуться к каталогу
-                    </a>
-                </div>
-            </div>
+  <div class="row justify-content-center">
+    <div class="col-lg-6">
+      <div class="card shadow-sm">
+        <div class="card-header bg-primary text-white">
+          <h4 class="my-0">Добавить новый товар</h4>
         </div>
+        <div class="card-body">
+
+          {# Сообщения Django messages #}
+          {% if messages %}
+            {% for message in messages %}
+              <div class="alert alert-{{ message.tags }}">{{ message }}</div>
+            {% endfor %}
+          {% endif %}
+
+          <form method="post" enctype="multipart/form-data" novalidate>
+            {% csrf_token %}
+
+            {# Неформальные ошибки формы (ValidationError non_field_errors) #}
+            {% if form.non_field_errors %}
+              <div class="alert alert-danger">
+                {{ form.non_field_errors }}
+              </div>
+            {% endif %}
+
+            <div class="mb-3">
+              <label class="form-label" for="{{ form.name.id_for_label }}">Название</label>
+              {{ form.name }}
+              {% if form.name.errors %}
+                <div class="invalid-feedback d-block">
+                  {{ form.name.errors|striptags }}
+                </div>
+              {% endif %}
+            </div>
+
+            <div class="mb-3">
+              <label class="form-label" for="{{ form.description.id_for_label }}">Описание</label>
+              {{ form.description }}
+              {% if form.description.errors %}
+                <div class="invalid-feedback d-block">
+                  {{ form.description.errors|striptags }}
+                </div>
+              {% endif %}
+            </div>
+
+            <div class="row g-3">
+              <div class="col-md-6">
+                <label class="form-label" for="{{ form.category.id_for_label }}">Категория</label>
+                {{ form.category }}
+                {% if form.category.errors %}
+                  <div class="invalid-feedback d-block">
+                    {{ form.category.errors|striptags }}
+                  </div>
+                {% endif %}
+              </div>
+              <div class="col-md-6">
+                <label class="form-label" for="{{ form.price.id_for_label }}">Цена</label>
+                {{ form.price }}
+                {% if form.price.errors %}
+                  <div class="invalid-feedback d-block">
+                    {{ form.price.errors|striptags }}
+                  </div>
+                {% endif %}
+              </div>
+            </div>
+
+            <div class="mt-3">
+              <label class="form-label" for="{{ form.image.id_for_label }}">Изображение</label>
+              {{ form.image }}
+              {% if form.image.errors %}
+                <div class="invalid-feedback d-block">
+                  {{ form.image.errors|striptags }}
+                </div>
+              {% endif %}
+              <div class="form-text">
+                Допустимые форматы: JPG/PNG, максимум 5&nbsp;МБ.
+              </div>
+            </div>
+
+            <button type="submit" class="btn btn-success w-100 mt-4">
+              Сохранить
+            </button>
+          </form>
+
+          <a href="{% url 'home' %}" class="btn btn-outline-secondary w-100 mt-3">
+            <i class="fas fa-arrow-left"></i> Вернуться к каталогу
+          </a>
+        </div>
+      </div>
     </div>
+  </div>
 </div>
 {% endblock %}
