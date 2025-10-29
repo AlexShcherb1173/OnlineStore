@@ -29,7 +29,7 @@ class HomeView(ListView):
       остаётся стандартным."""
 
     model = Product
-    template_name = "home.html"
+    template_name = "catalog/home.html"
     context_object_name = "products"  # ✅ корректное имя для object_list
     paginate_by = 8
     ordering = ["-created_at"]
@@ -55,7 +55,7 @@ class ContactsView(TemplateView):
     POST: валидирует данные, формирует сообщение об успехе,
           при успехе очищает форму (демо-поведение без сохранения в БД)."""
 
-    template_name = "contacts.html"
+    template_name = "catalog/contacts.html"
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
@@ -89,7 +89,7 @@ class ProductDetailView(DetailView):
     под именем "product"."""
 
     model = Product
-    template_name = "product_detail.html"
+    template_name = "catalog/product_detail.html"
     context_object_name = "product"
 
 
@@ -100,7 +100,7 @@ class AddProductView(CreateView):
 
     model = Product
     form_class = ProductForm
-    template_name = "add_product.html"  # можешь заменить на "catalog/product_form.html"
+    template_name = "catalog/add_product.html"  # можешь заменить на "catalog/product_form.html"
 
     def form_valid(self, form):
         response = super().form_valid(form)
@@ -136,7 +136,7 @@ class ProductUpdateView(UpdateView):
 
     model = Product
     form_class = ProductForm
-    template_name = "product_form.html"  # единый шаблон формы для create/update
+    template_name = "catalog/product_form.html"  # единый шаблон формы для create/update
 
     def form_valid(self, form):
         resp = super().form_valid(form)
@@ -164,7 +164,7 @@ class ProductDeleteView(DeleteView):
     - Доступ только для сотрудников."""
 
     model = Product
-    template_name = "product_confirm_delete.html"
+    template_name = "catalog/product_confirm_delete.html"
 
     def get_success_url(self):
         from django.contrib import messages
