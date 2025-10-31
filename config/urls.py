@@ -22,8 +22,9 @@ from django.urls import path, include
 
 urlpatterns = [
     path("admin/", admin.site.urls),
-    path("", include("catalog.urls")),
-    path("blog/", include("blog.urls")),
+    # path("admin/", include("django.contrib.admin.urls")),
+    path("", include(("catalog.urls", "catalog"), namespace="catalog")),
+    path("blog/", include(("blog.urls", "blog"), namespace="blog")),
     path("users/", include(("users.urls", "users"), namespace="users")),
 ]
 

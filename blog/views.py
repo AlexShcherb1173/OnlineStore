@@ -1,4 +1,4 @@
-from django.urls import reverse_lazy
+from django.urls import reverse, reverse_lazy
 from django.views.generic import (
     ListView,
     DetailView,
@@ -6,65 +6,64 @@ from django.views.generic import (
     UpdateView,
     DeleteView,
 )
+from django.contrib.auth.mixins import LoginRequiredMixin, UserPassesTestMixin
 from django.utils import timezone
 from django.contrib import messages
 from .models import Post
-
+from .forms import PostForm
+from django.db.models import F
 
 class PostListView(ListView):
-    """CBV для отображения списка блоговых записей.
-    Отображает только опубликованные посты."""
-
+    """Список постов. Для staff — все, для остальных — только опубликованные."""
     model = Post
     template_name = "blog/post_list.html"
     context_object_name = "posts"
-    paginate_by = 6  # постраничный вывод по 6 постов
+    paginate_by = 12
 
     def get_queryset(self):
-        """Возвращает только опубликованные посты, отсортированные по дате."""
-        return Post.objects.filter(is_published=True).order_by("-created_at")
+        qs = Post.objects.all().order_by("-created_at")
+        user = self.request.user
+        return qs if (user.is_authenticated and user.is_staff) else qs.filter(is_published=True)
 
 
 class PostDetailView(DetailView):
-    """CBV для отображения одной блоговой записи с увеличением счётчика просмотров."""
-
+    """Детальная страница поста с атомарным увеличением счётчика просмотров."""
     model = Post
     template_name = "blog/post_detail.html"
     context_object_name = "post"
 
+    def get_queryset(self):
+        qs = super().get_queryset()
+        user = self.request.user
+        return qs if (user.is_authenticated and user.is_staff) else qs.filter(is_published=True)
+
     def get_object(self, queryset=None):
-        """При каждом просмотре увеличивает количество просмотров."""
         obj = super().get_object(queryset)
-        obj.views_count += 1
-        obj.save(update_fields=["views_count"])
+        Post.objects.filter(pk=obj.pk).update(views_count=F("views_count") + 1)
+        obj.refresh_from_db(fields=["views_count"])
         return obj
 
 
-class PostCreateView(CreateView):
-    """CBV для создания нового поста."""
-
+class PostCreateView(LoginRequiredMixin, CreateView):
+    """Создание поста."""
     model = Post
-    fields = ["title", "content", "preview", "is_published"]
+    form_class = PostForm
     template_name = "blog/post_form.html"
 
     def form_valid(self, form):
-        """Добавляет сообщение при успешном создании поста."""
         form.instance.created_at = timezone.now()
-        messages.success(
-            self.request, f"✅ Пост «{form.instance.title}» успешно создан!"
-        )
+        messages.success(self.request, f"✅ Пост «{form.instance.title}» успешно создан!")
         return super().form_valid(form)
 
     def get_success_url(self):
-        """После создания возвращает на список постов."""
-        return reverse_lazy("blog:post_list")
+        return self.object.get_absolute_url()
 
 
-class PostUpdateView(UpdateView):
-    """CBV для редактирования поста."""
-
+class PostUpdateView(LoginRequiredMixin, UpdateView):
+    """Редактирование поста.
+    Доступно ЛЮБОМУ аутентифицированному пользователю (без проверки автора)."""
     model = Post
-    fields = ["title", "content", "preview", "is_published"]
+    form_class = PostForm
     template_name = "blog/post_form.html"
 
     def form_valid(self, form):
@@ -72,16 +71,22 @@ class PostUpdateView(UpdateView):
         return super().form_valid(form)
 
     def get_success_url(self):
-        # Перенаправляем на страницу только что созданного поста
-        return reverse_lazy("blog:post_detail", kwargs={"pk": self.object.pk})
+        return reverse("blog:post_detail", kwargs={"pk": self.object.pk})
 
 
-class PostDeleteView(DeleteView):
-    """CBV для удаления поста с подтверждением."""
-
+class PostDeleteView(LoginRequiredMixin, UserPassesTestMixin, DeleteView):
+    """Удаление поста. Оставим только для staff, чтобы не потерять контент.
+    Если нужно — снимите ограничение, убрав UserPassesTestMixin и test_func()."""
     model = Post
     template_name = "blog/post_confirm_delete.html"
     success_url = reverse_lazy("blog:post_list")
+
+    def test_func(self):
+        return self.request.user.is_staff
+
+    def handle_no_permission(self):
+        messages.error(self.request, "Удаление доступно только сотрудникам (staff).")
+        return super().handle_no_permission()
 
     def delete(self, request, *args, **kwargs):
         messages.warning(request, "🗑 Пост был удалён.")

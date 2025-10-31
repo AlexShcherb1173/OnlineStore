@@ -85,3 +85,58 @@ class EmailAuthenticationForm(forms.Form):
 
     def get_user(self):
         return self.user
+
+class ProfileForm(forms.ModelForm):
+    """Редактирование профиля текущего пользователя."""
+    class Meta:
+        model = User
+        # Если в вашей модели нет avatar — уберите его из списка полей.
+        fields = ["first_name", "last_name", "email", "avatar"] if hasattr(User, "avatar") \
+                 else ["first_name", "last_name", "email"]
+        widgets = {
+            "first_name": forms.TextInput(attrs={"class": "form-control"}),
+            "last_name":  forms.TextInput(attrs={"class": "form-control"}),
+            "email":      forms.EmailInput(attrs={"class": "form-control"}),
+            # avatar рисуем стандартным виджетом file input
+        }
+
+    def clean_email(self):
+        email = self.cleaned_data["email"].lower()
+        qs = User.objects.exclude(pk=self.instance.pk).filter(email__iexact=email)
+        if qs.exists():
+            raise forms.ValidationError("Пользователь с таким e-mail уже существует.")
+        return email
+
+
+class DeleteAccountForm(forms.Form):
+    """Подтверждение удаления: ввод e-mail + текущего пароля + галочка-согласие."""
+    email = forms.EmailField(label="Ваш e-mail", widget=forms.EmailInput(attrs={"class": "form-control"}))
+    password = forms.CharField(
+        label="Текущий пароль",
+        strip=False,
+        widget=forms.PasswordInput(attrs={"class": "form-control"})
+    )
+    agree = forms.BooleanField(
+        label="Я понимаю, что удаление аккаунта необратимо",
+        required=True,
+        widget=forms.CheckboxInput(attrs={"class": "form-check-input"})
+    )
+
+    def __init__(self, user, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.user = user
+
+    def clean(self):
+        cleaned = super().clean()
+        email = cleaned.get("email")
+        password = cleaned.get("password")
+
+        if email and email.lower() != (self.user.email or "").lower():
+            self.add_error("email", "E-mail не совпадает с адресом вашего аккаунта.")
+
+        if password:
+            # аутентифицируемся через ваш email backend
+            u = authenticate(None, email=self.user.email, password=password)
+            if u is None:
+                self.add_error("password", "Неверный пароль.")
+        return cleaned

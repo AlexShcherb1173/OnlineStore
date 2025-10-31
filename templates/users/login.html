@@ -13,11 +13,14 @@
         </div>
         <div class="card-body">
           {% if messages %}
-            {% for message in messages %}
-              <div class="alert alert-{{ message.tags }}">{{ message }}</div>
-            {% endfor %}
+             {% for message in messages %}
+               {% if 'auth' in message.tags %}
+                 <div class="alert alert-{{ message.level_tag }} mb-3" role="alert">
+                 {{ message }}
+                 </div>
+               {% endif %}
+              {% endfor %}
           {% endif %}
-
           <form method="post">
             {% csrf_token %}
             {{ form.as_p }}

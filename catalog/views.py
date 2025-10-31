@@ -116,7 +116,7 @@ class AddProductView(CreateView):
         return super().form_invalid(form)
 
     def get_success_url(self):
-        return reverse("product_detail", kwargs={"pk": self.object.pk})
+        return reverse("catalog:product_detail", kwargs={"pk": self.object.pk})
 
 
 class StaffRequiredMixin(LoginRequiredMixin, UserPassesTestMixin):
@@ -142,19 +142,19 @@ class ProductUpdateView(UpdateView):
         resp = super().form_valid(form)
         from django.contrib import messages
 
-        messages.success(self.request, f"✅ Товар «{self.object.name}» обновлён.")
+        messages.success(self.request, f"✅ Товар «{self.object.name}» обновлён.", extra_tags="catalog")
         return resp
 
     def form_invalid(self, form):
         from django.contrib import messages
 
         messages.error(
-            self.request, "⚠️ Ошибка при обновлении товара. Проверьте введённые данные."
+            self.request, "⚠️ Ошибка при обновлении товара. Проверьте введённые данные.", extra_tags="catalog"
         )
         return super().form_invalid(form)
 
     def get_success_url(self):
-        return reverse("product_detail", kwargs={"pk": self.object.pk})
+        return reverse("catalog:product_detail", kwargs={"pk": self.object.pk})
 
 
 class ProductDeleteView(DeleteView):
@@ -170,5 +170,5 @@ class ProductDeleteView(DeleteView):
         from django.contrib import messages
 
         messages.success(self.request, f"🗑 Товар «{self.object.name}» удалён.")
-        return reverse("home")
+        return reverse("catalog:home")
 

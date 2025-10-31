@@ -2,7 +2,7 @@
 
 <nav class="navbar navbar-expand-lg navbar-dark bg-primary">
   <div class="container">
-    <a class="navbar-brand fw-bold" href="{% url 'home' %}">SkyStore</a>
+    <a class="navbar-brand fw-bold" href="{% url 'catalog:home' %}">SkyStore</a>
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
       <span class="navbar-toggler-icon"></span>
@@ -13,11 +13,11 @@
       <ul class="navbar-nav me-auto mb-2 mb-lg-0">
         <li class="nav-item">
           <a class="nav-link {% if request.resolver_match.url_name == 'home' %}active{% endif %}"
-             href="{% url 'home' %}">Каталог</a>
+             href="{% url 'catalog:home' %}">Каталог</a>
         </li>
         <li class="nav-item">
           <a class="nav-link {% if request.resolver_match.url_name == 'contacts' %}active{% endif %}"
-             href="{% url 'contacts' %}">Контакты</a>
+             href="{% url 'catalog:contacts' %}">Контакты</a>
         </li>
         <li class="nav-item">
           <a class="nav-link {% if request.resolver_match.namespace == 'blog' %}active{% endif %}"
@@ -28,7 +28,13 @@
       <!-- 🔹 Блок пользователя -->
       <ul class="navbar-nav ms-auto mb-2 mb-lg-0 align-items-center">
         {% if user.is_authenticated %}
-          <li class="nav-item me-3 d-flex align-items-center">
+           <a href="{% url 'users:profile_edit' %}" class="text-white text-decoration-none me-3">
+           <i class="fas fa-user-circle me-1"></i> {{ user.email }}
+           </a>
+           <a href="{% url 'logout' %}" class="btn btn-outline-light btn-sm">Выйти</a>
+        {% else %}
+            <a href="{% url 'login' %}" class="btn btn-outline-light btn-sm">Войти</a>
+        {% endif %}
             {% if user.avatar %}
               <img src="{{ user.avatar.url }}" alt="Аватар" class="rounded-circle me-2" width="32" height="32">
             {% endif %}

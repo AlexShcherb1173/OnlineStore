@@ -11,6 +11,8 @@ from catalog.views import (
     ProductDeleteView,
 )
 
+app_name = "catalog"
+
 urlpatterns = [
     # 🏠 Главная страница со списком товаров (ListView)
     path("", HomeView.as_view(), name="home"),

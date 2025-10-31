@@ -41,9 +41,7 @@ class PostAdmin(admin.ModelAdmin):
     def preview_image(self, obj):
         """Отображает миниатюру превью прямо в списке."""
         if obj.preview:
-            return (
-                f'<img src="{obj.preview.url}" width="80" style="border-radius:8px;">'
-            )
+            return format_html('<img src="{}" width="80" style="border-radius:8px;">', obj.preview.url)
         return "—"
 
     preview_image.short_description = "Превью"
