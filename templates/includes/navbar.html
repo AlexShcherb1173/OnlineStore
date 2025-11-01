@@ -1,62 +1,49 @@
 {% load static %}
 
+{# templates/includes/navbar.html #}
 <nav class="navbar navbar-expand-lg navbar-dark bg-primary">
   <div class="container">
     <a class="navbar-brand fw-bold" href="{% url 'catalog:home' %}">SkyStore</a>
 
-    <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+    <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#mainNav" aria-controls="mainNav" aria-expanded="false" aria-label="Toggle navigation">
       <span class="navbar-toggler-icon"></span>
     </button>
 
-    <div class="collapse navbar-collapse" id="navbarNav">
-      <!-- 🔹 Основные ссылки -->
+    <div class="collapse navbar-collapse" id="mainNav">
       <ul class="navbar-nav me-auto mb-2 mb-lg-0">
-        <li class="nav-item">
-          <a class="nav-link {% if request.resolver_match.url_name == 'home' %}active{% endif %}"
-             href="{% url 'catalog:home' %}">Каталог</a>
-        </li>
-        <li class="nav-item">
-          <a class="nav-link {% if request.resolver_match.url_name == 'contacts' %}active{% endif %}"
-             href="{% url 'catalog:contacts' %}">Контакты</a>
-        </li>
-        <li class="nav-item">
-          <a class="nav-link {% if request.resolver_match.namespace == 'blog' %}active{% endif %}"
-             href="{% url 'blog:post_list' %}">Блог</a>
-        </li>
+        <li class="nav-item"><a class="nav-link" href="{% url 'catalog:home' %}">Каталог</a></li>
+        <li class="nav-item"><a class="nav-link" href="{% url 'blog:post_list' %}">Блог</a></li>
       </ul>
 
-      <!-- 🔹 Блок пользователя -->
-      <ul class="navbar-nav ms-auto mb-2 mb-lg-0 align-items-center">
+      <ul class="navbar-nav ms-auto align-items-center">
+        {# ======= Блок пользователя ======= #}
         {% if user.is_authenticated %}
-           <a href="{% url 'users:profile_edit' %}" class="text-white text-decoration-none me-3">
-           <i class="fas fa-user-circle me-1"></i> {{ user.email }}
-           </a>
-           <a href="{% url 'logout' %}" class="btn btn-outline-light btn-sm">Выйти</a>
-        {% else %}
-            <a href="{% url 'login' %}" class="btn btn-outline-light btn-sm">Войти</a>
-        {% endif %}
+          <li class="nav-item d-flex align-items-center me-3">
             {% if user.avatar %}
               <img src="{{ user.avatar.url }}" alt="Аватар" class="rounded-circle me-2" width="32" height="32">
             {% endif %}
-            <span class="text-white small">{{ user.email }}</span>
+            <a class="nav-link text-white fw-semibold" href="{% url 'users:profile_edit' %}">
+              <i class="fa-solid fa-user-circle me-1"></i>{{ user.email }}
+            </a>
           </li>
           <li class="nav-item">
             <a class="btn btn-outline-light btn-sm" href="{% url 'users:logout' %}">
-              <i class="fas fa-sign-out-alt"></i> Выйти
+              <i class="fa-solid fa-right-from-bracket"></i> Выйти
             </a>
           </li>
         {% else %}
           <li class="nav-item me-2">
             <a class="btn btn-outline-light btn-sm" href="{% url 'users:login' %}">
-              <i class="fas fa-sign-in-alt"></i> Войти
+              <i class="fa-solid fa-right-to-bracket"></i> Войти
             </a>
           </li>
           <li class="nav-item">
             <a class="btn btn-light btn-sm text-primary" href="{% url 'users:register' %}">
-              <i class="fas fa-user-plus"></i> Регистрация
+              <i class="fa-solid fa-user-plus"></i> Регистрация
             </a>
           </li>
         {% endif %}
+        {# ================================= #}
       </ul>
     </div>
   </div>

@@ -3,57 +3,80 @@
 
 {% block content %}
 <div class="pricing-header px-3 py-5 mx-auto text-center">
-    <h1 class="display-4">Контакты</h1>
+  <h1 class="display-4">Контакты</h1>
 </div>
 
 <div class="container">
-    <div class="row">
-        <div class="col-lg-9 col-md-6">
-            <div class="card mb-4 shadow-sm">
-                <div class="card-body">
-                    {% if contact %}
-                        <table class="table table-striped">
-                            <tr><td class="fw-bold w-25">Компания</td><td>{{ contact.name }}</td></tr>
-                            <tr><td class="fw-bold">Телефон</td><td>{{ contact.phone }}</td></tr>
-                            <tr><td class="fw-bold">Email</td><td><a href="mailto:{{ contact.email }}">{{ contact.email }}</a></td></tr>
-                            <tr><td class="fw-bold">Адрес</td><td>{{ contact.address }}</td></tr>
-                            <tr><td class="fw-bold">О нас</td><td>{{ contact.about }}</td></tr>
-                        </table>
-                    {% else %}
-                        <div class="alert alert-secondary">Контактная информация пока не добавлена.</div>
-                    {% endif %}
-                </div>
+  <div class="row">
+    <!-- Левая колонка: информация о компании -->
+    <div class="col-lg-9 col-md-6">
+      <div class="card mb-4 shadow-sm">
+        <div class="card-body">
+          {% if contact %}
+            <table class="table table-striped">
+              <tr><td class="fw-bold w-25">Компания</td><td>{{ contact.name }}</td></tr>
+              <tr><td class="fw-bold">Телефон</td><td>{{ contact.phone }}</td></tr>
+              <tr><td class="fw-bold">Email</td><td><a href="mailto:{{ contact.email }}">{{ contact.email }}</a></td></tr>
+              <tr><td class="fw-bold">Адрес</td><td>{{ contact.address }}</td></tr>
+              <tr><td class="fw-bold">О нас</td><td>{{ contact.about }}</td></tr>
+            </table>
+          {% else %}
+            <div class="alert alert-secondary">
+              Контактная информация пока не добавлена.
             </div>
+          {% endif %}
         </div>
-
-        <div class="col-lg-3 col-md-6">
-            <div class="card mb-4 shadow-sm">
-                <div class="card-header bg-primary text-white">
-                    <h4 class="my-0">Свяжитесь с нами</h4>
-                </div>
-                <div class="card-body">
-                    {% if success_message %}
-                        <div class="alert alert-success">{{ success_message }}</div>
-                    {% endif %}
-                    <form method="post" action="">
-                        {% csrf_token %}
-                        <div class="mb-3">
-                            <label for="name" class="form-label">Имя</label>
-                            <input type="text" id="name" name="name" class="form-control" placeholder="Ваше имя" required>
-                        </div>
-                        <div class="mb-3">
-                            <label for="phone" class="form-label">Телефон</label>
-                            <input type="text" id="phone" name="phone" class="form-control" placeholder="Ваш телефон" required>
-                        </div>
-                        <div class="mb-3">
-                            <label for="message" class="form-label">Сообщение</label>
-                            <textarea id="message" name="message" class="form-control" placeholder="Ваше сообщение" required></textarea>
-                        </div>
-                        <button type="submit" class="btn btn-primary w-100">Отправить</button>
-                    </form>
-                </div>
-            </div>
-        </div>
+      </div>
     </div>
+
+    <!-- Правая колонка: форма обратной связи -->
+    <div class="col-lg-3 col-md-6">
+      <div class="card mb-4 shadow-sm">
+        <div class="card-header bg-primary text-white">
+          <h4 class="my-0">Свяжитесь с нами</h4>
+        </div>
+        <div class="card-body">
+          {% if success_message %}
+            <div class="alert alert-success">{{ success_message }}</div>
+          {% endif %}
+          <form method="post" novalidate>
+            {% csrf_token %}
+
+            <!-- Имя -->
+            <div class="mb-3">
+              <label for="id_name" class="form-label">Имя</label>
+              {{ form.name }}
+              {% if form.name.errors %}
+                <div class="invalid-feedback d-block">{{ form.name.errors|striptags }}</div>
+              {% endif %}
+            </div>
+
+            <!-- Телефон -->
+            <div class="mb-3">
+              <label for="id_phone" class="form-label">Телефон</label>
+              {{ form.phone }}
+              <div class="form-text">Введите только цифры, 7–15 символов.</div>
+              {% if form.phone.errors %}
+                <div class="invalid-feedback d-block">{{ form.phone.errors|striptags }}</div>
+              {% endif %}
+            </div>
+
+            <!-- Сообщение -->
+            <div class="mb-3">
+              <label for="id_message" class="form-label">Сообщение</label>
+              {{ form.message }}
+              {% if form.message.errors %}
+                <div class="invalid-feedback d-block">{{ form.message.errors|striptags }}</div>
+              {% endif %}
+            </div>
+
+            <button type="submit" class="btn btn-primary w-100">
+              <i class="fa-solid fa-paper-plane"></i> Отправить
+            </button>
+          </form>
+        </div>
+      </div>
+    </div>
+  </div>
 </div>
 {% endblock %}

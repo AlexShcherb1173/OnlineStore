@@ -9,23 +9,34 @@ class UserRegistrationForm(forms.ModelForm):
     """Форма регистрации пользователя по email и паролю.
     Валидирует уникальность email и совпадение паролей.
     """
+
     password1 = forms.CharField(
         label="Пароль",
-        widget=forms.PasswordInput(attrs={"class": "form-control", "autocomplete": "new-password"})
+        widget=forms.PasswordInput(
+            attrs={"class": "form-control", "autocomplete": "new-password"}
+        ),
     )
     password2 = forms.CharField(
         label="Повторите пароль",
-        widget=forms.PasswordInput(attrs={"class": "form-control", "autocomplete": "new-password"})
+        widget=forms.PasswordInput(
+            attrs={"class": "form-control", "autocomplete": "new-password"}
+        ),
     )
 
     class Meta:
         model = User
         fields = ["email", "avatar", "phone", "country"]
         widgets = {
-            "email": forms.EmailInput(attrs={"class": "form-control", "placeholder": "you@example.com"}),
+            "email": forms.EmailInput(
+                attrs={"class": "form-control", "placeholder": "you@example.com"}
+            ),
             "avatar": forms.ClearableFileInput(attrs={"class": "form-control"}),
-            "phone": forms.TextInput(attrs={"class": "form-control", "placeholder": "+7..."}),
-            "country": forms.TextInput(attrs={"class": "form-control", "placeholder": "Страна"}),
+            "phone": forms.TextInput(
+                attrs={"class": "form-control", "placeholder": "+7..."}
+            ),
+            "country": forms.TextInput(
+                attrs={"class": "form-control", "placeholder": "Страна"}
+            ),
         }
 
     def clean_email(self):
@@ -56,13 +67,18 @@ class UserRegistrationForm(forms.ModelForm):
 
 class EmailAuthenticationForm(forms.Form):
     """Форма авторизации по email и паролю."""
+
     email = forms.EmailField(
         label="Email",
-        widget=forms.EmailInput(attrs={"class": "form-control", "autocomplete": "email"})
+        widget=forms.EmailInput(
+            attrs={"class": "form-control", "autocomplete": "email"}
+        ),
     )
     password = forms.CharField(
         label="Пароль",
-        widget=forms.PasswordInput(attrs={"class": "form-control", "autocomplete": "current-password"})
+        widget=forms.PasswordInput(
+            attrs={"class": "form-control", "autocomplete": "current-password"}
+        ),
     )
 
     def __init__(self, request=None, *args, **kwargs):
@@ -86,17 +102,22 @@ class EmailAuthenticationForm(forms.Form):
     def get_user(self):
         return self.user
 
+
 class ProfileForm(forms.ModelForm):
     """Редактирование профиля текущего пользователя."""
+
     class Meta:
         model = User
         # Если в вашей модели нет avatar — уберите его из списка полей.
-        fields = ["first_name", "last_name", "email", "avatar"] if hasattr(User, "avatar") \
-                 else ["first_name", "last_name", "email"]
+        fields = (
+            ["first_name", "last_name", "email", "avatar"]
+            if hasattr(User, "avatar")
+            else ["first_name", "last_name", "email"]
+        )
         widgets = {
             "first_name": forms.TextInput(attrs={"class": "form-control"}),
-            "last_name":  forms.TextInput(attrs={"class": "form-control"}),
-            "email":      forms.EmailInput(attrs={"class": "form-control"}),
+            "last_name": forms.TextInput(attrs={"class": "form-control"}),
+            "email": forms.EmailInput(attrs={"class": "form-control"}),
             # avatar рисуем стандартным виджетом file input
         }
 
@@ -110,16 +131,19 @@ class ProfileForm(forms.ModelForm):
 
 class DeleteAccountForm(forms.Form):
     """Подтверждение удаления: ввод e-mail + текущего пароля + галочка-согласие."""
-    email = forms.EmailField(label="Ваш e-mail", widget=forms.EmailInput(attrs={"class": "form-control"}))
+
+    email = forms.EmailField(
+        label="Ваш e-mail", widget=forms.EmailInput(attrs={"class": "form-control"})
+    )
     password = forms.CharField(
         label="Текущий пароль",
         strip=False,
-        widget=forms.PasswordInput(attrs={"class": "form-control"})
+        widget=forms.PasswordInput(attrs={"class": "form-control"}),
     )
     agree = forms.BooleanField(
         label="Я понимаю, что удаление аккаунта необратимо",
         required=True,
-        widget=forms.CheckboxInput(attrs={"class": "form-check-input"})
+        widget=forms.CheckboxInput(attrs={"class": "form-check-input"}),
     )
 
     def __init__(self, user, *args, **kwargs):

@@ -3,8 +3,10 @@ from django.contrib.auth.backends import ModelBackend
 
 User = get_user_model()
 
+
 class EmailAuthBackend(ModelBackend):
     """Аутентификация по email вместо username. На всякий случай"""
+
     def authenticate(self, request, username=None, password=None, email=None, **kwargs):
         login = (email or username or "").lower()
         if not login:
@@ -16,4 +18,3 @@ class EmailAuthBackend(ModelBackend):
         if user.check_password(password):
             return user
         return None
-

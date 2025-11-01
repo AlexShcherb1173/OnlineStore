@@ -100,7 +100,9 @@ class AddProductView(CreateView):
 
     model = Product
     form_class = ProductForm
-    template_name = "catalog/add_product.html"  # можешь заменить на "catalog/product_form.html"
+    template_name = (
+        "catalog/add_product.html"  # можешь заменить на "catalog/product_form.html"
+    )
 
     def form_valid(self, form):
         response = super().form_valid(form)
@@ -142,14 +144,20 @@ class ProductUpdateView(UpdateView):
         resp = super().form_valid(form)
         from django.contrib import messages
 
-        messages.success(self.request, f"✅ Товар «{self.object.name}» обновлён.", extra_tags="catalog")
+        messages.success(
+            self.request,
+            f"✅ Товар «{self.object.name}» обновлён.",
+            extra_tags="catalog",
+        )
         return resp
 
     def form_invalid(self, form):
         from django.contrib import messages
 
         messages.error(
-            self.request, "⚠️ Ошибка при обновлении товара. Проверьте введённые данные.", extra_tags="catalog"
+            self.request,
+            "⚠️ Ошибка при обновлении товара. Проверьте введённые данные.",
+            extra_tags="catalog",
         )
         return super().form_invalid(form)
 
@@ -171,4 +179,3 @@ class ProductDeleteView(DeleteView):
 
         messages.success(self.request, f"🗑 Товар «{self.object.name}» удалён.")
         return reverse("catalog:home")
-

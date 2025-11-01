@@ -151,8 +151,8 @@ DEFAULT_FROM_EMAIL = os.getenv("DEFAULT_FROM_EMAIL", EMAIL_HOST_USER)
 ADMIN_EMAIL = os.getenv("ADMIN_EMAIL", "email@example.com")
 
 AUTHENTICATION_BACKENDS = [
-    "users.backends.EmailAuthBackend",              # наш email-backend
-    "django.contrib.auth.backends.ModelBackend",     # запасной
+    "users.backends.EmailAuthBackend",  # наш email-backend
+    "django.contrib.auth.backends.ModelBackend",  # запасной
 ]
 
 LOGIN_REDIRECT_URL = "catalog:home"

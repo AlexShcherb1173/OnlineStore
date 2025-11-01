@@ -22,7 +22,7 @@ class Post(models.Model):
         on_delete=models.CASCADE,
         verbose_name=_("Автор"),
         related_name="posts",
-        null=True,       # ← временно, чтобы не упасть на существующих данных
+        null=True,  # ← временно, чтобы не упасть на существующих данных
         blank=True,
     )
 
@@ -82,6 +82,7 @@ class Post(models.Model):
             except Exception:
                 # умышленно не роняем сохранение поста
                 pass
+
 
 # без доп задания
 # class Post(models.Model):

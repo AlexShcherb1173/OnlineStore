@@ -7,9 +7,15 @@ from django.urls import reverse_lazy, reverse
 from django.views.generic import FormView, TemplateView, UpdateView
 from django.conf import settings
 
-from .forms import UserRegistrationForm, EmailAuthenticationForm, ProfileForm, DeleteAccountForm
+from .forms import (
+    UserRegistrationForm,
+    EmailAuthenticationForm,
+    ProfileForm,
+    DeleteAccountForm,
+)
 
 User = get_user_model()
+
 
 class RegisterView(FormView):
     """
@@ -20,6 +26,7 @@ class RegisterView(FormView):
     - отправляет приветственное письмо;
     - редиректит на главную.
     """
+
     template_name = "users/register.html"
     form_class = UserRegistrationForm
     success_url = reverse_lazy("catalog:home")
@@ -31,7 +38,9 @@ class RegisterView(FormView):
         # 2) Аутентификация через кастомный email backend
         email = user.email
         raw_password = form.cleaned_data.get("password1")
-        authenticated_user = authenticate(self.request, email=email, password=raw_password)
+        authenticated_user = authenticate(
+            self.request, email=email, password=raw_password
+        )
 
         if authenticated_user is not None:
             # authenticate() проставил backend → login пройдёт без ошибок
@@ -62,6 +71,7 @@ class RegisterView(FormView):
 
 class LoginView(FormView):
     """Авторизация по email и паролю."""
+
     template_name = "users/login.html"
     form_class = EmailAuthenticationForm
 
@@ -80,6 +90,7 @@ class LoginView(FormView):
 
 class LogoutView(LoginRequiredMixin, TemplateView):
     """Выход с редиректом на главную."""
+
     template_name = "users/logged_out.html"
 
     def dispatch(self, request, *args, **kwargs):
@@ -87,8 +98,10 @@ class LogoutView(LoginRequiredMixin, TemplateView):
         messages.info(request, "Вы вышли из аккаунта.", extra_tags="auth")
         return redirect("catalog:home")
 
+
 class ProfileUpdateView(LoginRequiredMixin, UpdateView):
     """Редактирование собственного профиля."""
+
     model = User
     form_class = ProfileForm
     template_name = "users/profile_form.html"
@@ -107,6 +120,7 @@ class ProfileUpdateView(LoginRequiredMixin, UpdateView):
 
 class AccountDeleteView(LoginRequiredMixin, FormView):
     """Удаление аккаунта с дополнительным подтверждением."""
+
     template_name = "users/profile_confirm_delete.html"
     form_class = DeleteAccountForm
     success_url = reverse_lazy("catalog:home")  # поменяйте при необходимости
@@ -122,5 +136,7 @@ class AccountDeleteView(LoginRequiredMixin, FormView):
         # выход и удаление
         logout(self.request)
         user.delete()
-        messages.warning(self.request, f"Аккаунт {email} удалён. Нам будет вас не хватать 😢")
+        messages.warning(
+            self.request, f"Аккаунт {email} удалён. Нам будет вас не хватать 😢"
+        )
         return super().form_valid(form)

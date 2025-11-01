@@ -62,10 +62,14 @@ class Command(BaseCommand):
                 if len(content) > 1024:
                     return content
         except (URLError, HTTPError, TimeoutError) as e:
-            self.stdout.write(self.style.WARNING(f"⚠️ Не удалось загрузить изображение: {e}"))
+            self.stdout.write(
+                self.style.WARNING(f"⚠️ Не удалось загрузить изображение: {e}")
+            )
         return None
 
-    def _attach_random_image(self, product: Product, idx_hint: int | None = None) -> None:
+    def _attach_random_image(
+        self, product: Product, idx_hint: int | None = None
+    ) -> None:
         """
         Прикрепляет к продукту случайное изображение из picsum.
         Ошибки проглатываем, чтобы не ломать основной сценарий.
@@ -79,7 +83,9 @@ class Command(BaseCommand):
         try:
             product.image.save(filename, ContentFile(content), save=True)
         except Exception as e:
-            self.stdout.write(self.style.WARNING(f"⚠️ Не удалось сохранить файл изображения: {e}"))
+            self.stdout.write(
+                self.style.WARNING(f"⚠️ Не удалось сохранить файл изображения: {e}")
+            )
 
     # ---------- main ----------
 
@@ -96,31 +102,47 @@ class Command(BaseCommand):
             try:
                 call_command("loaddata", "catalog/fixtures/categories.json")
                 call_command("loaddata", "catalog/fixtures/products.json")
-                self.stdout.write(self.style.SUCCESS("✅ Данные успешно загружены из фикстур!"))
+                self.stdout.write(
+                    self.style.SUCCESS("✅ Данные успешно загружены из фикстур!")
+                )
             except Exception as e:
-                self.stdout.write(self.style.ERROR(f"❌ Ошибка при загрузке фикстур: {e}"))
+                self.stdout.write(
+                    self.style.ERROR(f"❌ Ошибка при загрузке фикстур: {e}")
+                )
             return
 
         # === 2) Категории ===
         self.stdout.write("📦 Создаём категории...")
         categories = [
-            Category.objects.create(name="Электроника", description="Гаджеты и техника"),
-            Category.objects.create(name="Одежда", description="Мужская и женская одежда"),
-            Category.objects.create(name="Книги", description="Печатные и электронные издания"),
-            Category.objects.create(name="Бытовая техника", description="Техника для дома"),
+            Category.objects.create(
+                name="Электроника", description="Гаджеты и техника"
+            ),
+            Category.objects.create(
+                name="Одежда", description="Мужская и женская одежда"
+            ),
+            Category.objects.create(
+                name="Книги", description="Печатные и электронные издания"
+            ),
+            Category.objects.create(
+                name="Бытовая техника", description="Техника для дома"
+            ),
         ]
 
         # === 3) Случайные товары (--count) ===
         if options["count"] > 0:
             count = options["count"]
-            self.stdout.write(f"🎲 Генерируем {count} случайных продуктов с изображениями...")
+            self.stdout.write(
+                f"🎲 Генерируем {count} случайных продуктов с изображениями..."
+            )
             products_batch = []
             for i in range(count):
                 category = random.choice(categories)
                 name = fake.sentence(nb_words=3).replace(".", "")
                 description = fake.text(max_nb_chars=160)
                 price_cents = random.randint(10_000, 5_000_000)  # от 100.00 до 50000.00
-                price = (Decimal(price_cents) / Decimal("100")).quantize(Decimal("0.01"), rounding=ROUND_HALF_UP)
+                price = (Decimal(price_cents) / Decimal("100")).quantize(
+                    Decimal("0.01"), rounding=ROUND_HALF_UP
+                )
 
                 p = Product(
                     name=name,
@@ -133,7 +155,9 @@ class Command(BaseCommand):
                 self._attach_random_image(p, idx_hint=i + 1)
                 products_batch.append(p)
 
-            self.stdout.write(self.style.SUCCESS(f"✅ Сгенерировано {count} продуктов!"))
+            self.stdout.write(
+                self.style.SUCCESS(f"✅ Сгенерировано {count} продуктов!")
+            )
             return
 
         # === 4) Стандартный набор ===
@@ -141,21 +165,43 @@ class Command(BaseCommand):
         electronics, clothes, books, appliances = categories
 
         items = [
-            dict(name="Смартфон Samsung S24", description="Флагман 2025 года, 256 ГБ",
-                 price=89990, category=electronics),
-            dict(name="Ноутбук Lenovo ThinkPad X1", description="Core i7, 32 ГБ RAM, SSD 1 ТБ",
-                 price=189990, category=electronics),
-            dict(name="Футболка белая", description="100% хлопок, размер M",
-                 price=1490, category=clothes),
-            dict(name="Книга «Django для начинающих»", description="Пошаговое руководство по Django 5",
-                 price=990, category=books),
-            dict(name="Пылесос Dyson V15", description="Беспроводной пылесос премиум-класса",
-                 price=49990, category=appliances),
+            dict(
+                name="Смартфон Samsung S24",
+                description="Флагман 2025 года, 256 ГБ",
+                price=89990,
+                category=electronics,
+            ),
+            dict(
+                name="Ноутбук Lenovo ThinkPad X1",
+                description="Core i7, 32 ГБ RAM, SSD 1 ТБ",
+                price=189990,
+                category=electronics,
+            ),
+            dict(
+                name="Футболка белая",
+                description="100% хлопок, размер M",
+                price=1490,
+                category=clothes,
+            ),
+            dict(
+                name="Книга «Django для начинающих»",
+                description="Пошаговое руководство по Django 5",
+                price=990,
+                category=books,
+            ),
+            dict(
+                name="Пылесос Dyson V15",
+                description="Беспроводной пылесос премиум-класса",
+                price=49990,
+                category=appliances,
+            ),
         ]
 
         for i, data in enumerate(items, start=1):
             p = Product.objects.create(**data)
             self._attach_random_image(p, idx_hint=i)
 
-        self.stdout.write(self.style.SUCCESS("✅ База успешно заполнена тестовыми данными!"))
+        self.stdout.write(
+            self.style.SUCCESS("✅ База успешно заполнена тестовыми данными!")
+        )
         self.stdout.write(self.style.SUCCESS("🎉 Команда fill_db завершена успешно!"))
