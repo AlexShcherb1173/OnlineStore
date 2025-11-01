@@ -1,0 +1,48 @@
+{% extends "base.html" %}
+{% block title %}Удаление аккаунта{% endblock %}
+{% block content %}
+<div class="container py-5" style="max-width: 640px;">
+  <div class="card border-danger shadow-sm">
+    <div class="card-header bg-danger text-white">
+      <h4 class="my-1">Удалить аккаунт</h4>
+    </div>
+    <div class="card-body">
+      <p class="mb-3">
+        Это действие <strong>необратимо</strong>. Все данные профиля будут удалены.
+      </p>
+
+      <form method="post" novalidate>
+        {% csrf_token %}
+        <div class="mb-3">
+          <label class="form-label">Подтвердите e-mail</label>
+          {{ form.email }}
+          <div class="invalid-feedback d-block">{{ form.email.errors }}</div>
+        </div>
+
+        <div class="mb-3">
+          <label class="form-label">Введите текущий пароль</label>
+          {{ form.password }}
+          <div class="invalid-feedback d-block">{{ form.password.errors }}</div>
+        </div>
+
+        <div class="form-check mb-3">
+          {{ form.agree }}
+          <label class="form-check-label" for="{{ form.agree.id_for_label }}">
+            {{ form.fields.agree.label }}
+          </label>
+          <div class="invalid-feedback d-block">{{ form.agree.errors }}</div>
+        </div>
+
+        <div class="d-flex gap-2">
+          <a href="{% url 'users:profile_edit' %}" class="btn btn-outline-secondary">
+            Отмена
+          </a>
+          <button type="submit" class="btn btn-danger">
+            Да, удалить навсегда
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+{% endblock %}

@@ -1,0 +1,70 @@
+{% load static %}
+<!doctype html>
+<html lang="ru">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>{% block title %}SkyStore{% endblock %}</title>
+
+    <!-- ✅ Общие стили -->
+    <link rel="stylesheet" href="{% static 'bootstrap-5.3.8-dist/css/bootstrap.css' %}">
+    <link rel="stylesheet" href="{% static 'fontawesome-free-7.1.0-web/css/all.css' %}">
+</head>
+<body>
+
+    <!-- 🔹 Главное меню -->
+    {% include "includes/navbar.html" %}
+
+        <!-- 🔹 Контент -->
+    <main class="container-fluid px-0">
+        {% block content %}
+        {% endblock %}
+    </main>
+
+    <!-- 🔹 Footer -->
+    <footer class="bg-dark text-white pt-5 pb-3 mt-5">
+        <div class="container">
+            <div class="row">
+                <div class="col-12 col-md mb-3">
+                    <h5 class="fw-bold">SkyStore</h5>
+                    <p class="text-muted">Ваш магазин цифровых решений</p>
+                    <div class="d-flex gap-3 mb-3">
+                        <a href="https://t.me/" target="_blank" class="text-white-50 fs-4"><i class="fab fa-telegram"></i></a>
+                        <a href="https://github.com/" target="_blank" class="text-white-50 fs-4"><i class="fab fa-github"></i></a>
+                        <a href="https://twitter.com/" target="_blank" class="text-white-50 fs-4"><i class="fab fa-x-twitter"></i></a>
+                    </div>
+                    <small class="d-block mb-3 text-muted">&copy; 2023–2025</small>
+                </div>
+
+                <div class="col-6 col-md">
+                    <h5>Категории</h5>
+                    <ul class="list-unstyled">
+                        <li><a class="text-white-50" href="#">Рассылки</a></li>
+                        <li><a class="text-white-50" href="#">Телеграм-боты</a></li>
+                        <li><a class="text-white-50" href="#">Утилиты</a></li>
+                    </ul>
+                </div>
+
+                <div class="col-6 col-md">
+                    <h5>Дополнительно</h5>
+                    <ul class="list-unstyled">
+                        <li><a class="text-white-50" href="{% url 'blog:post_list' %}">Блог</a></li>
+                        <li><a class="text-white-50" href="#">FAQ</a></li>
+                    </ul>
+                </div>
+
+                <div class="col-6 col-md">
+                    <h5>О нас</h5>
+                    <ul class="list-unstyled">
+                        <li><a class="text-white-50" href="{% url 'catalog:contacts' %}">Контакты</a></li>
+                        <li><a class="text-white-50" href="#">О компании</a></li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </footer>
+
+    <!-- ✅ Скрипты -->
+    <script src="{% static 'bootstrap-5.3.8-dist/js/bootstrap.bundle.js' %}"></script>
+</body>
+</html>
