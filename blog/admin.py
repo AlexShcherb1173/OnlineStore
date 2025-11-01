@@ -18,18 +18,22 @@ class PostAdmin(admin.ModelAdmin):
         "is_published",
         "views_count",
         "created_at",
-        "preview_image",   # миниатюра в списке
+        "preview_image",  # миниатюра в списке
     )
     search_fields = ("title", "content")
     list_filter = ("is_published", "created_at")
     ordering = ("-created_at",)
 
     # Форма
-    readonly_fields = ("views_count", "created_at", "preview_admin")  # предпросмотр в форме
+    readonly_fields = (
+        "views_count",
+        "created_at",
+        "preview_admin",
+    )  # предпросмотр в форме
     fields = (
         "title",
         "content",
-        "preview",        # поле загрузки изображения
+        "preview",  # поле загрузки изображения
         "preview_admin",  # картинка-превью (только чтение)
         "is_published",
         "views_count",
@@ -46,6 +50,7 @@ class PostAdmin(admin.ModelAdmin):
                 obj.preview.url,
             )
         return "—"
+
     preview_image.short_description = "Превью"
 
     def preview_admin(self, obj):
@@ -56,4 +61,5 @@ class PostAdmin(admin.ModelAdmin):
                 obj.preview.url,
             )
         return "Изображение не загружено"
+
     preview_admin.short_description = "Текущее изображение"
