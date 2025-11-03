@@ -14,9 +14,29 @@ class CategoryAdmin(admin.ModelAdmin):
 class ProductAdmin(admin.ModelAdmin):
     """Отображение товаров в админке."""
 
-    list_display = ("id", "name", "price", "category")  # Выводим нужные поля
-    list_filter = ("category",)  # Фильтрация по категории
+    list_display = (
+        "id",
+        "name",
+        "price",
+        "category",
+        "is_published",
+    )  # Выводим нужные поля
+    list_editable = ("is_published",)
+    list_filter = (
+        "category",
+        "is_published",
+    )  # Фильтрация по категории
     search_fields = ("name", "description")
+
+    actions = ("make_published", "make_unpublished")
+
+    @admin.action(description="Опубликовать выбранные")
+    def make_published(self, request, queryset):
+        queryset.update(is_published=True)
+
+    @admin.action(description="Снять с публикации выбранные")
+    def make_unpublished(self, request, queryset):
+        queryset.update(is_published=False)
 
 
 @admin.register(Contact)

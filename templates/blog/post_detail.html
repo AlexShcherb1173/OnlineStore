@@ -9,12 +9,12 @@
     <h1 class="fw-bold m-0">{{ post.title }}</h1>
 
     <div class="d-flex gap-2">
-      {% if user.is_authenticated %}
+      {% if perms.blog.change_post %}
         <a href="{% url 'blog:post_edit' post.pk %}" class="btn btn-sm btn-outline-primary">
           <i class="fa-solid fa-pen-to-square me-1"></i> Редактировать
         </a>
       {% endif %}
-      {% if user.is_authenticated and user.is_staff %}
+      {% if perms.blog.delete_post and user.is_staff %}
         <a href="{% url 'blog:post_delete' post.pk %}" class="btn btn-sm btn-outline-danger">
           <i class="fa-solid fa-trash-can me-1"></i> Удалить
         </a>

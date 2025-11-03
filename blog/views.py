@@ -6,7 +6,11 @@ from django.views.generic import (
     UpdateView,
     DeleteView,
 )
-from django.contrib.auth.mixins import LoginRequiredMixin, UserPassesTestMixin
+from django.contrib.auth.mixins import (
+    LoginRequiredMixin,
+    UserPassesTestMixin,
+    PermissionRequiredMixin,
+)
 from django.utils import timezone
 from django.contrib import messages
 from .models import Post
@@ -61,6 +65,7 @@ class PostCreateView(LoginRequiredMixin, CreateView):
     model = Post
     form_class = PostForm
     template_name = "blog/post_form.html"
+    permission_required = "blog.add_post"
 
     def form_valid(self, form):
         form.instance.created_at = timezone.now()
@@ -80,6 +85,7 @@ class PostUpdateView(LoginRequiredMixin, UpdateView):
     model = Post
     form_class = PostForm
     template_name = "blog/post_form.html"
+    permission_required = "blog.change_post"
 
     def form_valid(self, form):
         messages.success(self.request, f"✏️ Пост «{form.instance.title}» обновлён.")
@@ -96,6 +102,7 @@ class PostDeleteView(LoginRequiredMixin, UserPassesTestMixin, DeleteView):
     model = Post
     template_name = "blog/post_confirm_delete.html"
     success_url = reverse_lazy("blog:post_list")
+    permission_required = "blog.delete_post"
 
     def test_func(self):
         return self.request.user.is_staff
