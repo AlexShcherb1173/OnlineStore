@@ -144,8 +144,21 @@ class ProductForm(forms.ModelForm, BootstrapFormMixin):
         }
 
     def __init__(self, *args, **kwargs):
+        self.user = kwargs.pop("user", None)  # ← примем пользователя из вьюхи
         super().__init__(*args, **kwargs)
         self._init_bootstrap_widgets()
+
+        # показать флаг публикации, только если у пользователя есть право менять публикацию
+        if self.user and (
+            self.user.has_perm("catalog.change_product")
+            or self.user.has_perm("catalog.can_unpublish_product")
+        ):
+            self.fields["is_published"] = forms.BooleanField(
+                required=False,
+                label="Опубликован",
+                help_text="Снимите галочку, чтобы скрыть товар от пользователей.",
+                widget=forms.CheckboxInput(attrs={"class": "form-check-input"}),
+            )
 
     # ---------------------------
     # 🔸 Кастомные валидаторы

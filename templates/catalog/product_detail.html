@@ -33,13 +33,26 @@
               <i class="fa-solid fa-arrow-left"></i> Назад к каталогу
             </a>
 
-            {% if user.is_authenticated and user.is_staff %}
-              <a href="{% url 'catalog:product_edit' product.pk %}" class="btn btn-outline-primary">
-                <i class="fa-solid fa-pen"></i> Редактировать
-              </a>
-              <a href="{% url 'catalog:product_delete' product.pk %}" class="btn btn-outline-danger">
-                <i class="fa-solid fa-trash"></i> Удалить
-              </a>
+            {# Показываем только тем, у кого есть соответствующие права #}
+            {% if user.is_authenticated %}
+              {% if product.is_published and perms.catalog.can_unpublish_product %}
+                <form method="post" action="{% url 'catalog:product_unpublish' product.pk %}" class="d-inline">
+                  {% csrf_token %}
+                  <button type="submit" class="btn btn-warning btn-sm">
+                    <i class="fas fa-eye-slash me-1"></i> Снять с публикации
+                  </button>
+                </form>
+              {% endif %}
+              {% if user.is_superuser or user.id == product.owner_id %}
+                <a href="{% url 'catalog:product_edit' product.pk %}" class="btn btn-primary btn-sm me-2">
+                 <i class="fas fa-edit me-1"></i> Редактировать
+                </a>
+              {% endif %}
+              {% if user.is_superuser or user.id == product.owner_id or perms.catalog.delete_product %}
+                <a href="{% url 'catalog:product_delete' product.pk %}" class="btn btn-danger btn-sm">
+                  <i class="fas fa-trash-alt me-1"></i> Удалить
+                </a>
+              {% endif %}
             {% endif %}
           </div>
         </div>
