@@ -1,4 +1,6 @@
 from django.contrib import messages
+from django.core.cache import cache
+from django.conf import settings
 from django.contrib.auth.mixins import (
     LoginRequiredMixin,
     UserPassesTestMixin,
@@ -18,29 +20,47 @@ from django.views.generic import (
 
 from catalog.forms import ContactForm, ProductForm
 from catalog.models import Product
+from catalog.services import get_products_by_category
+
 
 
 class HomeView(ListView):
-    """Главная: показывает только опубликованные товары для обычных пользователей.
-    Staff видит все товары."""
+    """Главная страница интернет-магазина — с низкоуровневым кешированием списка продуктов."""
 
     model = Product
     template_name = "catalog/home.html"
-    context_object_name = "products"  # ✅ корректное имя для object_list
+    context_object_name = "products"  # корректное имя для object_list
     paginate_by = 8
     ordering = ["-created_at"]
 
     def get_queryset(self):
+        # Базовый queryset
         qs = Product.objects.select_related("category").order_by("-created_at")
+
+        # Для не-staff показываем только опубликованные
         user = self.request.user
-        if user.is_authenticated and user.is_staff:
-            return qs
-        return qs.filter(is_published=True)
+        is_staff = user.is_authenticated and user.is_staff
+        if not is_staff:
+            qs = qs.filter(is_published=True)
+
+        # Кэширование: ключ зависит от роли (staff/public)
+        if getattr(settings, "CACHE_ENABLED", False):
+            cache_key = f"home:products:{'staff' if is_staff else 'public'}"
+            cache_ttl = getattr(settings, "CACHE_TTL", 300)  # 5 минут по умолчанию
+
+            products = cache.get(cache_key)
+            if products is None:
+                # Превращаем в список объектов, чтобы ListView мог пагинировать без повторного запроса
+                products = list(qs)
+                cache.set(cache_key, products, cache_ttl)
+            return products
+
+        # Без кэша — отдаем queryset
+        return qs
 
     def get_context_data(self, **kwargs):
-        """Добавляет в контекст список последних 5 товаров (для отладки в консоли).
-        На вывод это не влияет."""
         context = super().get_context_data(**kwargs)
+        # Просто отладочная выдача последних 5 товаров (не влияет на шаблон)
         latest_products = Product.objects.order_by("-created_at")[:5]
         print("🆕 Последние добавленные товары:")
         for p in latest_products:
@@ -243,3 +263,17 @@ class OwnerRequiredMixin(UserPassesTestMixin):
     def handle_no_permission(self):
         messages.error(self.request, "У вас нет прав на выполнение этого действия.")
         return super().handle_no_permission()
+
+
+class CategoryProductsView(TemplateView):
+    """Представление для отображения всех товаров в выбранной категории."""
+    template_name = "catalog/category_products.html"
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        category_id = self.kwargs.get("category_id")
+        category = get_object_or_404(Category, pk=category_id)
+
+        context["category"] = category
+        context["products"] = get_products_by_category(category.id)
+        return context

@@ -42,6 +42,7 @@ INSTALLED_APPS = [
     "django.contrib.messages",
     "django.contrib.staticfiles",
     "catalog",
+    "catalog.apps.CatalogConfig",
     "blog",
     "users",
 ]
@@ -157,3 +158,24 @@ AUTHENTICATION_BACKENDS = [
 
 LOGIN_REDIRECT_URL = "catalog:home"
 LOGOUT_REDIRECT_URL = "catalog:home"
+
+# включение/отключение кеша флагом
+CACHE_ENABLED = os.getenv("CACHE_ENABLED", "1").lower() in {"1", "true", "yes"}
+# конфигурация Redis
+CACHES = {
+    'default': {
+        'BACKEND': 'django.core.cache.backends.redis.RedisCache',
+        "LOCATION": os.getenv("REDIS_URL", "redis://127.0.0.1:6379/1"),
+        "OPTIONS": {
+            "CLIENT_CLASS": "django_redis.client.DefaultClient",
+        },
+    }
+}
+
+# опционально) для тестов, если Redis не работает
+try:
+    import redis
+    redis.from_url(CACHES["default"]["LOCATION"]).ping()
+except Exception:
+    print("⚠ Redis недоступен — кеширование отключено.")
+    CACHE_ENABLED = False

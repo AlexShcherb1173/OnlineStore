@@ -1,6 +1,7 @@
 from django.urls import path
 from django.conf import settings
 from django.conf.urls.static import static
+from django.views.decorators.cache import cache_page
 
 from catalog.views import (
     HomeView,
@@ -10,9 +11,15 @@ from catalog.views import (
     ProductUpdateView,
     ProductDeleteView,
     ProductUnpublishView,
+    CategoryProductsView,
 )
 
 app_name = "catalog"
+
+# оборачиваем страницу товара в кеш, если включено кеширование
+product_detail_view = ProductDetailView.as_view()
+if settings.CACHE_ENABLED:
+    product_detail_view = cache_page(60 * 15)(product_detail_view)  # 15 минут
 
 urlpatterns = [
     # 🏠 Главная страница со списком товаров (ListView)
@@ -32,6 +39,9 @@ urlpatterns = [
     ),
     path(
         "<int:pk>/unpublish/", ProductUnpublishView.as_view(), name="product_unpublish"
+    ),
+    path(
+        "category/<int:category_id>/", CategoryProductsView.as_view(), name="category_products"
     ),
 ]
 
