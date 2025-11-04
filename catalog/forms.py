@@ -1,6 +1,7 @@
 from django import forms
 from django.core.exceptions import ValidationError
 from django.forms import RadioSelect, CheckboxSelectMultiple
+from django.core.validators import RegexValidator
 from .models import Product
 
 # 🔒 Список запрещённых слов (используется в обоих валидаторах)
@@ -73,6 +74,12 @@ class BootstrapFormMixin:
             self._add_class(widget, "form-control")
 
 
+phone_digits_validator = RegexValidator(
+    regex=r"^\d{7,15}$",
+    message="Телефон должен содержать только цифры (7–15 символов).",
+)
+
+
 class ContactForm(forms.Form, BootstrapFormMixin):
     """Форма обратной связи для страницы "Контакты".
     Используется для ввода имени пользователя, его контактного телефона
@@ -87,13 +94,20 @@ class ContactForm(forms.Form, BootstrapFormMixin):
     )
     phone = forms.CharField(
         label="Телефон",
-        max_length=20,
+        validators=[phone_digits_validator],
         widget=forms.TextInput(
-            attrs={"class": "form-control", "placeholder": "Ваш телефон"}
+            attrs={
+                "class": "form-control",
+                "inputmode": "numeric",  # моб. клавиатура с цифрами
+                "pattern": r"\d{7,15}",  # клиентская проверка
+                "maxlength": "15",
+                "placeholder": "Напр.: 79001234567",
+            }
         ),
     )
     message = forms.CharField(
         label="Сообщение",
+        required=False,
         widget=forms.Textarea(
             attrs={"class": "form-control", "placeholder": "Ваше сообщение"}
         ),
@@ -130,8 +144,21 @@ class ProductForm(forms.ModelForm, BootstrapFormMixin):
         }
 
     def __init__(self, *args, **kwargs):
+        self.user = kwargs.pop("user", None)  # ← примем пользователя из вьюхи
         super().__init__(*args, **kwargs)
         self._init_bootstrap_widgets()
+
+        # показать флаг публикации, только если у пользователя есть право менять публикацию
+        if self.user and (
+            self.user.has_perm("catalog.change_product")
+            or self.user.has_perm("catalog.can_unpublish_product")
+        ):
+            self.fields["is_published"] = forms.BooleanField(
+                required=False,
+                label="Опубликован",
+                help_text="Снимите галочку, чтобы скрыть товар от пользователей.",
+                widget=forms.CheckboxInput(attrs={"class": "form-check-input"}),
+            )
 
     # ---------------------------
     # 🔸 Кастомные валидаторы

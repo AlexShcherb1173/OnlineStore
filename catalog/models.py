@@ -1,4 +1,6 @@
 from django.core.exceptions import ValidationError
+from django.urls import reverse_lazy, reverse
+from django.conf import settings
 from django.db import models
 
 # 🚫 Запрещённые слова (проверяются без учёта регистра)
@@ -51,14 +53,39 @@ class Product(models.Model):
     price = models.DecimalField(
         max_digits=10, decimal_places=2, verbose_name="Цена за покупку"
     )
-    created_at = models.DateTimeField(auto_now_add=True, verbose_name="Дата создания")
     updated_at = models.DateTimeField(
         auto_now=True, verbose_name="Дата последнего изменения"
+    )
+    is_published = models.BooleanField(
+        default=False,
+        db_index=True,
+        verbose_name="Опубликован",
+        help_text="Если выключено — товар не виден в списке/детальной странице для обычных пользователей.",
+    )
+    owner = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        null=False,
+        blank=False,
+        on_delete=models.CASCADE,
+        related_name="products",
+        verbose_name="Владелец",
+        db_index=True,
+    )
+
+    created_at = models.DateTimeField(
+        auto_now_add=True, db_index=True, verbose_name="Дата создания"
     )
 
     class Meta:
         verbose_name = "Товар"
         verbose_name_plural = "Товары"
+        ordering = ["-id"]
+        permissions = [
+            ("can_unpublish_product", "Может отменять публикацию продукта"),
+        ]
+
+    def get_absolute_url(self):
+        return reverse("catalog:product_detail", kwargs={"pk": self.pk})
 
     def __str__(self):
         return f"{self.name} ({self.category.name})"

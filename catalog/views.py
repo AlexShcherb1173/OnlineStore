@@ -1,5 +1,11 @@
 from django.contrib import messages
-from django.contrib.auth.mixins import LoginRequiredMixin, UserPassesTestMixin
+from django.contrib.auth.mixins import (
+    LoginRequiredMixin,
+    UserPassesTestMixin,
+    PermissionRequiredMixin,
+)
+from django.shortcuts import get_object_or_404, redirect
+from django.views import View
 from django.urls import reverse_lazy, reverse
 from django.views.generic import (
     ListView,
@@ -15,28 +21,21 @@ from catalog.models import Product
 
 
 class HomeView(ListView):
-    """Главная страница интернет-магазина.
-    Использует ListView для получения и пагинации списка товаров.
-    Запрашивает товары с подгруженными категориями (select_related) и
-    сортирует по дате создания (новые — первыми).
-    В шаблоне доступны:
-      - page_obj  — объект пагинации (используйте его в цикле для карточек);
-      - products  — список объектов на текущей странице (синоним object_list);
-      - is_paginated, paginator — стандартные атрибуты ListView.
-    Примечание:
-      Раньше контекст назывался "page_obj" через context_object_name — это могло
-      «перезатирать» настоящий page_obj. Теперь указываем "products", а page_obj
-      остаётся стандартным."""
+    """Главная: показывает только опубликованные товары для обычных пользователей.
+    Staff видит все товары."""
 
     model = Product
-    template_name = "home.html"
+    template_name = "catalog/home.html"
     context_object_name = "products"  # ✅ корректное имя для object_list
     paginate_by = 8
     ordering = ["-created_at"]
 
     def get_queryset(self):
-        """Оптимизированный queryset — подгружаем категорию одним JOIN."""
-        return Product.objects.select_related("category").order_by("-created_at")
+        qs = Product.objects.select_related("category").order_by("-created_at")
+        user = self.request.user
+        if user.is_authenticated and user.is_staff:
+            return qs
+        return qs.filter(is_published=True)
 
     def get_context_data(self, **kwargs):
         """Добавляет в контекст список последних 5 товаров (для отладки в консоли).
@@ -55,7 +54,7 @@ class ContactsView(TemplateView):
     POST: валидирует данные, формирует сообщение об успехе,
           при успехе очищает форму (демо-поведение без сохранения в БД)."""
 
-    template_name = "contacts.html"
+    template_name = "catalog/contacts.html"
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
@@ -84,30 +83,42 @@ class ContactsView(TemplateView):
 
 
 class ProductDetailView(DetailView):
-    """Детальная страница одного товара.
-    Автоматически получает объект по pk из URL и передаёт его в шаблон
-    под именем "product"."""
+    """Обычным пользователям доступна только опубликованная карточка.
+    Staff видит любую."""
 
     model = Product
-    template_name = "product_detail.html"
+    template_name = "catalog/product_detail.html"
     context_object_name = "product"
 
+    def get_queryset(self):
+        qs = super().get_queryset()
+        if self.request.user.is_authenticated and self.request.user.is_staff:
+            return qs
+        return qs.filter(is_published=True)
 
-class AddProductView(CreateView):
-    """Создание нового товара через форму.
-    Использует ProductForm c кастомной валидацией (запрещённые слова для name/description).
-    При успешном сохранении перенаправляет на страницу созданного товара."""
+
+class AddProductView(LoginRequiredMixin, CreateView):
+    """Создание товара — только для пользователей с правом add_product."""
 
     model = Product
     form_class = ProductForm
-    template_name = "add_product.html"  # можешь заменить на "catalog/product_form.html"
+    template_name = (
+        "catalog/add_product.html"  # можешь заменить на "catalog/product_form.html"
+    )
+    permission_required = "catalog.add_product"
+
+    def get_form_kwargs(self):
+        kwargs = super().get_form_kwargs()
+        kwargs["user"] = self.request.user  # ← передаём пользователя в форму
+        return kwargs
 
     def form_valid(self, form):
-        response = super().form_valid(form)
+        form.instance.owner = self.request.user
+        responce = super().form_valid(form)
         messages.success(
             self.request, f"✅ Товар «{self.object.name}» успешно добавлен!"
         )
-        return response
+        return responce
 
     def form_invalid(self, form):
         messages.error(
@@ -116,59 +127,119 @@ class AddProductView(CreateView):
         return super().form_invalid(form)
 
     def get_success_url(self):
-        return reverse("product_detail", kwargs={"pk": self.object.pk})
+        return reverse("catalog:product_detail", kwargs={"pk": self.object.pk})
 
 
-class StaffRequiredMixin(LoginRequiredMixin, UserPassesTestMixin):
-    """Миксин для ограничения доступа:
-    - пользователь должен быть авторизован,
-    - пользователь должен быть сотрудником (is_staff=True)."""
+class OwnerRequiredMixin(UserPassesTestMixin):
+    """Доступ разрешён только владельцу (или суперюзеру)."""
 
     def test_func(self):
-        return self.request.user.is_staff
+        obj = getattr(self, "object", None) or self.get_object()
+        user = self.request.user
+        return user.is_authenticated and (user.is_superuser or obj.owner_id == user.id)
+
+    def handle_no_permission(self):
+        messages.error(self.request, "У вас нет прав на выполнение этого действия.")
+        return super().handle_no_permission()
 
 
-class ProductUpdateView(UpdateView):
-    """Редактирование существующего товара.
-    - Использует ProductForm (с валидацией запрещённых слов).
-    - После успешного сохранения — редирект на страницу товара.
-    - Доступ только для сотрудников."""
+class OwnerOrModeratorRequiredMixin(UserPassesTestMixin):
+    """Удалять может владелец или пользователь с правом delete_product (модератор/суперюзер)."""
+
+    def test_func(self):
+        obj = getattr(self, "object", None) or self.get_object()
+        user = self.request.user
+        if not user.is_authenticated:
+            return False
+        return (
+            (obj.owner_id == user.id)
+            or user.is_superuser
+            or user.has_perm("catalog.delete_product")
+        )
+
+    def handle_no_permission(self):
+        messages.error(
+            self.request, "Удалять товар может только владелец или модератор."
+        )
+        return super().handle_no_permission()
+
+
+# class StaffRequiredMixin(LoginRequiredMixin, UserPassesTestMixin):
+#     """Миксин для ограничения доступа:
+#     - пользователь должен быть авторизован,
+#     - пользователь должен быть сотрудником (is_staff=True)."""
+#
+#     def test_func(self):
+#         return self.request.user.is_staff
+
+
+class ProductUpdateView(LoginRequiredMixin, OwnerRequiredMixin, UpdateView):
+    """Редактирование — только с правом change_product."""
 
     model = Product
     form_class = ProductForm
-    template_name = "product_form.html"  # единый шаблон формы для create/update
+    template_name = "catalog/product_form.html"  # единый шаблон формы для create/update
+    # permission_required = "catalog.change_product"
+
+    def get_form_kwargs(self):
+        kwargs = super().get_form_kwargs()
+        kwargs["user"] = self.request.user  # ← передаём пользователя в форму
+        return kwargs
 
     def form_valid(self, form):
         resp = super().form_valid(form)
-        from django.contrib import messages
-
-        messages.success(self.request, f"✅ Товар «{self.object.name}» обновлён.")
+        messages.success(
+            self.request,
+            f"✅ Товар «{self.object.name}» обновлён.",
+            extra_tags="catalog",
+        )
         return resp
 
     def form_invalid(self, form):
-        from django.contrib import messages
 
         messages.error(
-            self.request, "⚠️ Ошибка при обновлении товара. Проверьте введённые данные."
+            self.request,
+            "⚠️ Ошибка при обновлении товара. Проверьте введённые данные.",
+            extra_tags="catalog",
         )
         return super().form_invalid(form)
 
     def get_success_url(self):
-        return reverse("product_detail", kwargs={"pk": self.object.pk})
+        return reverse("catalog:product_detail", kwargs={"pk": self.object.pk})
 
 
-class ProductDeleteView(DeleteView):
-    """Удаление товара с подтверждением.
-    - Показывает шаблон подтверждения.
-    - После удаления — редирект на главную страницу.
-    - Доступ только для сотрудников."""
+class ProductDeleteView(LoginRequiredMixin, OwnerOrModeratorRequiredMixin, DeleteView):
+    """Удаление — только с правом delete_product."""
 
     model = Product
-    template_name = "product_confirm_delete.html"
+    template_name = "catalog/product_confirm_delete.html"
 
     def get_success_url(self):
-        from django.contrib import messages
-
         messages.success(self.request, f"🗑 Товар «{self.object.name}» удалён.")
-        return reverse("home")
+        return reverse("catalog:home")
 
+
+class ProductUnpublishView(LoginRequiredMixin, PermissionRequiredMixin, View):
+    """Снять с публикации — только с кастомным правом can_unpublish_product."""
+
+    permission_required = "catalog.can_unpublish_product"
+
+    def post(self, request, pk):
+        product = get_object_or_404(Product, pk=pk)
+        product.is_published = False
+        product.save(update_fields=["is_published"])
+        messages.info(request, f"Публикация товара «{product.name}» отменена.")
+        return redirect(product.get_absolute_url())
+
+
+class OwnerRequiredMixin(UserPassesTestMixin):
+    """Доступ разрешён только владельцу (или суперюзеру)."""
+
+    def test_func(self):
+        obj = getattr(self, "object", None) or self.get_object()
+        user = self.request.user
+        return user.is_authenticated and (user.is_superuser or obj.owner_id == user.id)
+
+    def handle_no_permission(self):
+        messages.error(self.request, "У вас нет прав на выполнение этого действия.")
+        return super().handle_no_permission()

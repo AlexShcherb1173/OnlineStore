@@ -9,7 +9,10 @@ from catalog.views import (
     AddProductView,
     ProductUpdateView,
     ProductDeleteView,
+    ProductUnpublishView,
 )
+
+app_name = "catalog"
 
 urlpatterns = [
     # 🏠 Главная страница со списком товаров (ListView)
@@ -20,10 +23,15 @@ urlpatterns = [
     path("product/<int:pk>/", ProductDetailView.as_view(), name="product_detail"),
     # ➕ Добавление нового товара (CreateView)
     # path("products/add/", AddProductView.as_view(), name="product_add"),
-    path("add-product/", AddProductView.as_view(), name="add_product"),  # алиас для старого имени!!!
+    path(
+        "add-product/", AddProductView.as_view(), name="add_product"
+    ),  # алиас для старого имени!!!
     path("products/<int:pk>/edit/", ProductUpdateView.as_view(), name="product_edit"),
     path(
         "products/<int:pk>/delete/", ProductDeleteView.as_view(), name="product_delete"
+    ),
+    path(
+        "<int:pk>/unpublish/", ProductUnpublishView.as_view(), name="product_unpublish"
     ),
 ]
 
