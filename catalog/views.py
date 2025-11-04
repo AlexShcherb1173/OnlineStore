@@ -97,7 +97,7 @@ class ProductDetailView(DetailView):
         return qs.filter(is_published=True)
 
 
-class AddProductView(LoginRequiredMixin, CreateView):
+class AddProductView(LoginRequiredMixin, PermissionRequiredMixin, CreateView):
     """Создание товара — только для пользователей с правом add_product."""
 
     model = Product
