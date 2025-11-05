@@ -19,9 +19,9 @@ from django.views.generic import (
 )
 
 from catalog.forms import ContactForm, ProductForm
-from catalog.models import Product
+from catalog.models import Product, Category
 from catalog.services import get_products_by_category
-
+from catalog.cache_utils import invalidate_home_products
 
 
 class HomeView(ListView):
@@ -29,34 +29,39 @@ class HomeView(ListView):
 
     model = Product
     template_name = "catalog/home.html"
-    context_object_name = "products"  # корректное имя для object_list
+    context_object_name = "products"
     paginate_by = 8
     ordering = ["-created_at"]
 
     def get_queryset(self):
-        # Базовый queryset
-        qs = Product.objects.select_related("category").order_by("-created_at")
-
-        # Для не-staff показываем только опубликованные
+        """Возвращает список продуктов с учётом кеширования."""
         user = self.request.user
         is_staff = user.is_authenticated and user.is_staff
-        if not is_staff:
-            qs = qs.filter(is_published=True)
 
-        # Кэширование: ключ зависит от роли (staff/public)
+        # ключ для кэша зависит от роли пользователя
+        cache_key = f"home:products:{'staff' if is_staff else 'public'}"
+        cache_ttl = getattr(settings, "CACHE_TTL", 300)  # 5 минут по умолчанию
+
+        products = None
         if getattr(settings, "CACHE_ENABLED", False):
-            cache_key = f"home:products:{'staff' if is_staff else 'public'}"
-            cache_ttl = getattr(settings, "CACHE_TTL", 300)  # 5 минут по умолчанию
-
             products = cache.get(cache_key)
-            if products is None:
-                # Превращаем в список объектов, чтобы ListView мог пагинировать без повторного запроса
-                products = list(qs)
-                cache.set(cache_key, products, cache_ttl)
-            return products
 
-        # Без кэша — отдаем queryset
-        return qs
+        if products is None:
+            print("🧱 Кэш пуст — загружаем продукты из базы")
+            qs = Product.objects.select_related("category").order_by("-created_at")
+            if not is_staff:
+                qs = qs.filter(is_published=True)
+
+            # превращаем QuerySet в list, чтобы не было повторных SQL-запросов
+            products = list(qs)
+
+            if getattr(settings, "CACHE_ENABLED", False):
+                cache.set(cache_key, products, cache_ttl)
+                print(f"✅ Кэш обновлён: {cache_key}")
+        else:
+            print(f"⚡ Используем продукты из кэша: {cache_key}")
+
+        return products
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
@@ -65,6 +70,8 @@ class HomeView(ListView):
         print("🆕 Последние добавленные товары:")
         for p in latest_products:
             print(f"- {p.name} ({p.price} ₽)")
+        # Добавляем список всех категорий для кнопок
+        context["categories"] = Category.objects.all().order_by("name")
         return context
 
 
@@ -135,6 +142,7 @@ class AddProductView(LoginRequiredMixin, PermissionRequiredMixin, CreateView):
     def form_valid(self, form):
         form.instance.owner = self.request.user
         responce = super().form_valid(form)
+        invalidate_home_products()
         messages.success(
             self.request, f"✅ Товар «{self.object.name}» успешно добавлен!"
         )
@@ -208,6 +216,7 @@ class ProductUpdateView(LoginRequiredMixin, OwnerRequiredMixin, UpdateView):
 
     def form_valid(self, form):
         resp = super().form_valid(form)
+        invalidate_home_products()
         messages.success(
             self.request,
             f"✅ Товар «{self.object.name}» обновлён.",
@@ -236,6 +245,7 @@ class ProductDeleteView(LoginRequiredMixin, OwnerOrModeratorRequiredMixin, Delet
 
     def get_success_url(self):
         messages.success(self.request, f"🗑 Товар «{self.object.name}» удалён.")
+        invalidate_home_products()
         return reverse("catalog:home")
 
 
@@ -248,6 +258,7 @@ class ProductUnpublishView(LoginRequiredMixin, PermissionRequiredMixin, View):
         product = get_object_or_404(Product, pk=pk)
         product.is_published = False
         product.save(update_fields=["is_published"])
+        invalidate_home_products()
         messages.info(request, f"Публикация товара «{product.name}» отменена.")
         return redirect(product.get_absolute_url())
 
@@ -267,7 +278,11 @@ class OwnerRequiredMixin(UserPassesTestMixin):
 
 class CategoryProductsView(TemplateView):
     """Представление для отображения всех товаров в выбранной категории."""
+
+    model = Product
     template_name = "catalog/category_products.html"
+    context_object_name = "products"
+    paginate_by = 8
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
