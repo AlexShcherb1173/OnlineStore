@@ -28,8 +28,9 @@ SECRET_KEY = os.getenv("SECRET_KEY")
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS = ["*"]
 
+AUTH_USER_MODEL = "users.User"
 
 # Application definition
 
@@ -40,8 +41,9 @@ INSTALLED_APPS = [
     "django.contrib.sessions",
     "django.contrib.messages",
     "django.contrib.staticfiles",
-    "catalog",
+    "catalog.apps.CatalogConfig",
     "blog",
+    "users",
 ]
 
 MIDDLEWARE = [
@@ -110,9 +112,8 @@ AUTH_PASSWORD_VALIDATORS = [
 # Internationalization
 # https://docs.djangoproject.com/en/5.2/topics/i18n/
 
-LANGUAGE_CODE = "en-us"
-
-TIME_ZONE = "UTC"
+LANGUAGE_CODE = "ru-ru"
+TIME_ZONE = "Europe/Moscow"
 
 USE_I18N = True
 
@@ -122,7 +123,7 @@ USE_TZ = True
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/5.2/howto/static-files/
 
-STATIC_URL = "static/"
+STATIC_URL = "/static/"
 STATICFILES_DIRS = [
     os.path.join(BASE_DIR, "static"),
 ]
@@ -148,3 +149,30 @@ DEFAULT_FROM_EMAIL = os.getenv("DEFAULT_FROM_EMAIL", EMAIL_HOST_USER)
 
 # 📬 Основной e-mail администратора для уведомлений
 ADMIN_EMAIL = os.getenv("ADMIN_EMAIL", "email@example.com")
+
+AUTHENTICATION_BACKENDS = [
+    "users.backends.EmailAuthBackend",  # наш email-backend
+    "django.contrib.auth.backends.ModelBackend",  # запасной
+]
+
+LOGIN_REDIRECT_URL = "catalog:home"
+LOGOUT_REDIRECT_URL = "catalog:home"
+
+# включение/отключение кеша флагом
+CACHE_ENABLED = os.getenv("CACHE_ENABLED", "1").lower() in {"1", "true", "yes"}
+# конфигурация Redis
+CACHES = {
+    "default": {
+        "BACKEND": "django.core.cache.backends.redis.RedisCache",
+        "LOCATION": "redis://127.0.0.1:6379/1",
+    }
+}
+
+# опционально) для тестов, если Redis не работает
+try:
+    import redis
+
+    redis.from_url(CACHES["default"]["LOCATION"]).ping()
+except Exception:
+    print("⚠ Redis недоступен — кеширование отключено.")
+    CACHE_ENABLED = False

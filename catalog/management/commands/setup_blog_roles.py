@@ -1,0 +1,29 @@
+from django.core.management.base import BaseCommand
+from django.contrib.auth.models import Group, Permission
+from django.contrib.contenttypes.models import ContentType
+
+from blog.models import Post
+
+
+class Command(BaseCommand):
+    help = "Создаёт группу «Контент-менеджер» с правами управления блогом."
+
+    def handle(self, *args, **options):
+        group_name = "Контент-менеджер"
+        group, created = Group.objects.get_or_create(name=group_name)
+
+        ct = ContentType.objects.get_for_model(Post)
+        # Базовые модельные права Django: add/change/delete/view
+        codename_list = ["add_post", "change_post", "delete_post", "view_post"]
+
+        perms = Permission.objects.filter(content_type=ct, codename__in=codename_list)
+        group.permissions.add(*perms)
+
+        self.stdout.write(
+            self.style.SUCCESS(
+                f"Группа «{group_name}» настроена. Выдано прав: {perms.count()}."
+            )
+        )
+        self.stdout.write(
+            "Добавляйте пользователей в группу — и они смогут управлять блогом."
+        )

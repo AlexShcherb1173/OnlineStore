@@ -1,0 +1,50 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}{{ post.title }} — Блог{% endblock %}
+
+{% block content %}
+<div class="container mt-5" style="max-width: 900px;">
+  <div class="d-flex align-items-center justify-content-between mb-3">
+    <h1 class="fw-bold m-0">{{ post.title }}</h1>
+
+    <div class="d-flex gap-2">
+      {% if perms.blog.change_post %}
+        <a href="{% url 'blog:post_edit' post.pk %}" class="btn btn-sm btn-outline-primary">
+          <i class="fa-solid fa-pen-to-square me-1"></i> Редактировать
+        </a>
+      {% endif %}
+      {% if perms.blog.delete_post and user.is_staff %}
+        <a href="{% url 'blog:post_delete' post.pk %}" class="btn btn-sm btn-outline-danger">
+          <i class="fa-solid fa-trash-can me-1"></i> Удалить
+        </a>
+      {% endif %}
+    </div>
+  </div>
+
+  <p class="text-muted small mb-3">
+    Опубликовано: {{ post.created_at|date:"d.m.Y H:i" }}
+    • Просмотров: {{ post.views_count }}
+    {% if not post.is_published %} • <span class="badge text-bg-secondary">Черновик</span>{% endif %}
+  </p>
+
+  {% if post.preview %}
+    <img src="{{ post.preview.url }}" class="img-fluid rounded mb-4" alt="{{ post.title }}">
+  {% endif %}
+
+  <div class="card shadow-sm">
+    <div class="card-body">
+      {# Если у вас html-разметка в контенте — можно использовать safe (только если доверяете содержимому) #}
+      <div class="content">
+        {{ post.content|linebreaks }}
+      </div>
+    </div>
+  </div>
+
+  <div class="mt-4">
+    <a href="{% url 'blog:post_list' %}" class="btn btn-outline-secondary">
+      ← Назад к списку
+    </a>
+  </div>
+</div>
+{% endblock %}

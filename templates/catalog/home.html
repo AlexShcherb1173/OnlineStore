@@ -1,0 +1,125 @@
+{% extends "base.html" %}
+{% load static %}
+{% block title %}Каталог — SkyStore{% endblock %}
+
+{% block content %}
+<div class="container py-5">
+
+  <!-- 🔹 SkyStore gradient styles -->
+  <style>
+    .btn-skystore {
+      background: linear-gradient(135deg, #4f86f7 0%, #2d6cdf 100%);
+      color: #fff !important;
+      border: 0;
+      box-shadow: 0 6px 14px rgba(45,108,223,.25);
+      transition: transform .08s ease, box-shadow .2s ease, opacity .2s ease;
+    }
+    .btn-skystore:hover { transform: translateY(-1px); box-shadow: 0 10px 20px rgba(45,108,223,.28); opacity: .95; }
+    .btn-skystore:active { transform: translateY(0); box-shadow: 0 4px 10px rgba(45,108,223,.2); }
+    .btn-skystore-outline {
+      background: #fff; color: #2d6cdf !important; border: 1px solid #2d6cdf;
+    }
+    .category-chip {
+      font-size: .8rem;
+      border-radius: 999px;
+      padding: .35rem .7rem;
+      display: inline-flex;
+      align-items: center;
+      gap: .35rem;
+      white-space: nowrap;
+    }
+  </style>
+
+  <!-- 🔹 Заголовок и кнопка добавления товара -->
+  <div class="d-flex justify-content-between align-items-center mb-4">
+    <h1 class="fw-bold mb-0">Каталог товаров</h1>
+
+    {% if user.is_authenticated %}
+      <a href="{% url 'catalog:add_product' %}" class="btn btn-skystore">
+        <i class="fas fa-plus-circle me-1"></i> Добавить товар
+      </a>
+    {% else %}
+      <a href="{% url 'users:login' %}?next={% url 'catalog:add_product' %}" class="btn btn-skystore-outline">
+        <i class="fas fa-user-lock me-1"></i> Войти, чтобы добавить
+      </a>
+    {% endif %}
+  </div>
+
+  <!-- 🔹 Кнопки категорий -->
+  {% if categories %}
+  <div class="d-flex flex-wrap gap-2 mb-4">
+    {% for cat in categories %}
+      <a href="{% url 'catalog:category_products' cat.id %}" class="btn btn-sm btn-skystore">
+        <i class="fa-solid fa-tag me-1"></i>{{ cat.name }}
+      </a>
+    {% endfor %}
+  </div>
+  {% endif %}
+
+  <!-- 🔹 Сетка карточек -->
+  <div class="row row-cols-1 row-cols-md-4 g-4">
+    {% for product in page_obj %}
+    <div class="col">
+      <div class="card h-100 shadow-sm position-relative">
+
+        <!-- чекбокс (при необходимости) -->
+        <div class="form-check position-absolute top-0 end-0 m-2">
+          <input class="form-check-input" type="checkbox" id="check_{{ product.id }}">
+        </div>
+
+        {% if product.image %}
+          <img src="{{ product.image.url }}" class="card-img-top" alt="{{ product.name }}">
+        {% else %}
+          <img src="{% static 'img/no-image.png' %}" class="card-img-top" alt="Нет изображения">
+        {% endif %}
+
+        <div class="card-body d-flex flex-column">
+          <h5 class="card-title mb-1">{{ product.name }}</h5>
+
+          <!-- мини-кнопка категории у карточки -->
+          <div class="mb-2">
+            <a href="{% url 'catalog:category_products' product.category.id %}"
+               class="btn btn-light category-chip">
+              <i class="fa-solid fa-folder-open"></i> {{ product.category.name }}
+            </a>
+          </div>
+
+          <p class="card-text text-muted flex-grow-1">
+            {{ product.description|truncatechars:100 }}
+          </p>
+
+          <p class="fw-bold mb-2">{{ product.price }} ₽</p>
+
+          <a href="{% url 'catalog:product_detail' product.pk %}" class="btn btn-skystore btn-sm mt-auto">
+            Подробнее
+          </a>
+        </div>
+      </div>
+    </div>
+    {% empty %}
+      <p class="text-center text-muted">Пока нет доступных товаров.</p>
+    {% endfor %}
+  </div>
+
+  <!-- 🔹 Пагинация -->
+  <div class="mt-4 d-flex justify-content-center">
+    <nav>
+      <ul class="pagination">
+        {% if page_obj.has_previous %}
+          <li class="page-item">
+            <a class="page-link" href="?page={{ page_obj.previous_page_number }}">←</a>
+          </li>
+        {% endif %}
+        <li class="page-item active">
+          <span class="page-link">{{ page_obj.number }}</span>
+        </li>
+        {% if page_obj.has_next %}
+          <li class="page-item">
+            <a class="page-link" href="?page={{ page_obj.next_page_number }}">→</a>
+          </li>
+        {% endif %}
+      </ul>
+    </nav>
+  </div>
+</div>
+{% endblock %}

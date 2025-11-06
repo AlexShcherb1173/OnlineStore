@@ -1,0 +1,63 @@
+{% extends "base.html" %}
+{% block title %}{{ product.name }} - SkyStore{% endblock %}
+
+{% block content %}
+<div class="container py-5">
+  <div class="row justify-content-center">
+    <div class="col-lg-8">
+      <div class="card shadow-sm">
+        {% if product.image %}
+          <img src="{{ product.image.url }}" class="card-img-top" alt="{{ product.name }}">
+        {% else %}
+          <img src="https://picsum.photos/800/400?random={{ product.pk }}" class="card-img-top" alt="{{ product.name }}">
+        {% endif %}
+
+        <div class="card-body">
+          <h3 class="card-title mb-1">{{ product.name }}</h3>
+          {% if product.category %}
+            <p class="text-muted mb-2">{{ product.category.name }}</p>
+          {% endif %}
+
+          <p class="fs-4 fw-bold text-success mb-3">{{ product.price }} ₽</p>
+          <p class="card-text">{{ product.description }}</p>
+
+          <hr>
+
+          <p class="text-muted small mb-0">
+            Создан: {{ product.created_at|date:"d.m.Y H:i" }}<br>
+            Обновлён: {{ product.updated_at|date:"d.m.Y H:i" }}
+          </p>
+
+          <div class="mt-3 d-flex flex-wrap gap-2">
+            <a href="{% url 'catalog:home' %}" class="btn btn-outline-secondary">
+              <i class="fa-solid fa-arrow-left"></i> Назад к каталогу
+            </a>
+
+            {# Показываем только тем, у кого есть соответствующие права #}
+            {% if user.is_authenticated %}
+              {% if product.is_published and perms.catalog.can_unpublish_product %}
+                <form method="post" action="{% url 'catalog:product_unpublish' product.pk %}" class="d-inline">
+                  {% csrf_token %}
+                  <button type="submit" class="btn btn-warning btn-sm">
+                    <i class="fas fa-eye-slash me-1"></i> Снять с публикации
+                  </button>
+                </form>
+              {% endif %}
+              {% if user.is_superuser or user.id == product.owner_id %}
+                <a href="{% url 'catalog:product_edit' product.pk %}" class="btn btn-primary btn-sm me-2">
+                 <i class="fas fa-edit me-1"></i> Редактировать
+                </a>
+              {% endif %}
+              {% if user.is_superuser or user.id == product.owner_id or perms.catalog.delete_product %}
+                <a href="{% url 'catalog:product_delete' product.pk %}" class="btn btn-danger btn-sm">
+                  <i class="fas fa-trash-alt me-1"></i> Удалить
+                </a>
+              {% endif %}
+            {% endif %}
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
