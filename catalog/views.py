@@ -1,4 +1,6 @@
 from django.contrib import messages
+from django.core.cache import cache
+from django.conf import settings
 from django.contrib.auth.mixins import (
     LoginRequiredMixin,
     UserPassesTestMixin,
@@ -17,34 +19,59 @@ from django.views.generic import (
 )
 
 from catalog.forms import ContactForm, ProductForm
-from catalog.models import Product
+from catalog.models import Product, Category
+from catalog.services import get_products_by_category
+from catalog.cache_utils import invalidate_home_products
 
 
 class HomeView(ListView):
-    """Главная: показывает только опубликованные товары для обычных пользователей.
-    Staff видит все товары."""
+    """Главная страница интернет-магазина — с низкоуровневым кешированием списка продуктов."""
 
     model = Product
     template_name = "catalog/home.html"
-    context_object_name = "products"  # ✅ корректное имя для object_list
+    context_object_name = "products"
     paginate_by = 8
     ordering = ["-created_at"]
 
     def get_queryset(self):
-        qs = Product.objects.select_related("category").order_by("-created_at")
+        """Возвращает список продуктов с учётом кеширования."""
         user = self.request.user
-        if user.is_authenticated and user.is_staff:
-            return qs
-        return qs.filter(is_published=True)
+        is_staff = user.is_authenticated and user.is_staff
+
+        # ключ для кэша зависит от роли пользователя
+        cache_key = f"home:products:{'staff' if is_staff else 'public'}"
+        cache_ttl = getattr(settings, "CACHE_TTL", 300)  # 5 минут по умолчанию
+
+        products = None
+        if getattr(settings, "CACHE_ENABLED", False):
+            products = cache.get(cache_key)
+
+        if products is None:
+            print("🧱 Кэш пуст — загружаем продукты из базы")
+            qs = Product.objects.select_related("category").order_by("-created_at")
+            if not is_staff:
+                qs = qs.filter(is_published=True)
+
+            # превращаем QuerySet в list, чтобы не было повторных SQL-запросов
+            products = list(qs)
+
+            if getattr(settings, "CACHE_ENABLED", False):
+                cache.set(cache_key, products, cache_ttl)
+                print(f"✅ Кэш обновлён: {cache_key}")
+        else:
+            print(f"⚡ Используем продукты из кэша: {cache_key}")
+
+        return products
 
     def get_context_data(self, **kwargs):
-        """Добавляет в контекст список последних 5 товаров (для отладки в консоли).
-        На вывод это не влияет."""
         context = super().get_context_data(**kwargs)
+        # Просто отладочная выдача последних 5 товаров (не влияет на шаблон)
         latest_products = Product.objects.order_by("-created_at")[:5]
         print("🆕 Последние добавленные товары:")
         for p in latest_products:
             print(f"- {p.name} ({p.price} ₽)")
+        # Добавляем список всех категорий для кнопок
+        context["categories"] = Category.objects.all().order_by("name")
         return context
 
 
@@ -97,7 +124,7 @@ class ProductDetailView(DetailView):
         return qs.filter(is_published=True)
 
 
-class AddProductView(LoginRequiredMixin, CreateView):
+class AddProductView(LoginRequiredMixin, PermissionRequiredMixin, CreateView):
     """Создание товара — только для пользователей с правом add_product."""
 
     model = Product
@@ -115,6 +142,7 @@ class AddProductView(LoginRequiredMixin, CreateView):
     def form_valid(self, form):
         form.instance.owner = self.request.user
         responce = super().form_valid(form)
+        invalidate_home_products()
         messages.success(
             self.request, f"✅ Товар «{self.object.name}» успешно добавлен!"
         )
@@ -188,6 +216,7 @@ class ProductUpdateView(LoginRequiredMixin, OwnerRequiredMixin, UpdateView):
 
     def form_valid(self, form):
         resp = super().form_valid(form)
+        invalidate_home_products()
         messages.success(
             self.request,
             f"✅ Товар «{self.object.name}» обновлён.",
@@ -216,6 +245,7 @@ class ProductDeleteView(LoginRequiredMixin, OwnerOrModeratorRequiredMixin, Delet
 
     def get_success_url(self):
         messages.success(self.request, f"🗑 Товар «{self.object.name}» удалён.")
+        invalidate_home_products()
         return reverse("catalog:home")
 
 
@@ -228,6 +258,7 @@ class ProductUnpublishView(LoginRequiredMixin, PermissionRequiredMixin, View):
         product = get_object_or_404(Product, pk=pk)
         product.is_published = False
         product.save(update_fields=["is_published"])
+        invalidate_home_products()
         messages.info(request, f"Публикация товара «{product.name}» отменена.")
         return redirect(product.get_absolute_url())
 
@@ -243,3 +274,21 @@ class OwnerRequiredMixin(UserPassesTestMixin):
     def handle_no_permission(self):
         messages.error(self.request, "У вас нет прав на выполнение этого действия.")
         return super().handle_no_permission()
+
+
+class CategoryProductsView(TemplateView):
+    """Представление для отображения всех товаров в выбранной категории."""
+
+    model = Product
+    template_name = "catalog/category_products.html"
+    context_object_name = "products"
+    paginate_by = 8
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        category_id = self.kwargs.get("category_id")
+        category = get_object_or_404(Category, pk=category_id)
+
+        context["category"] = category
+        context["products"] = get_products_by_category(category.id)
+        return context
