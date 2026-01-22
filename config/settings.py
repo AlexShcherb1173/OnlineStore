@@ -26,7 +26,7 @@ BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 SECRET_KEY = os.getenv("SECRET_KEY")
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
+DEBUG = os.getenv("DEBUG", "0") == "1"
 
 ALLOWED_HOSTS = ["*"]
 
@@ -83,11 +83,11 @@ WSGI_APPLICATION = "config.wsgi.application"
 DATABASES = {
     "default": {
         "ENGINE": "django.db.backends.postgresql_psycopg2",
-        "NAME": os.getenv("DATABASE_NAME"),
-        "USER": os.getenv("DATABASE_USER"),
-        "PASSWORD": os.getenv("DATABASE_PASSWORD"),
-        "HOST": os.getenv("DATABASE_HOST", default="127.0.0.1"),
-        "PORT": os.getenv("DATABASE_PORT", default="5432"),
+        "NAME": os.getenv("POSTGRES_DB"),
+        "USER": os.getenv("POSTGRES_USER"),
+        "PASSWORD": os.getenv("POSTGRES_PASSWORD"),
+        "HOST": os.getenv("POSTGRES_HOST", default="127.0.0.1"),
+        "PORT": os.getenv("POSTGRES_PORT", default="5432"),
     }
 }
 # Password validation
@@ -159,20 +159,60 @@ LOGIN_REDIRECT_URL = "catalog:home"
 LOGOUT_REDIRECT_URL = "catalog:home"
 
 # включение/отключение кеша флагом
-CACHE_ENABLED = os.getenv("CACHE_ENABLED", "1").lower() in {"1", "true", "yes"}
-# конфигурация Redis
-CACHES = {
-    "default": {
-        "BACKEND": "django.core.cache.backends.redis.RedisCache",
-        "LOCATION": "redis://127.0.0.1:6379/1",
+CACHE_ENABLED = os.getenv("CACHE_ENABLED", "0") == "1"
+CACHE_TTL = int(os.getenv("CACHE_TTL", "300"))
+
+if CACHE_ENABLED:
+    REDIS_HOST = os.getenv("REDIS_HOST", "redis")
+    REDIS_PORT = os.getenv("REDIS_PORT", "6379")
+    REDIS_DB_CACHE = os.getenv("REDIS_DB_CACHE", "1")
+
+    CACHES = {
+        "default": {
+            "BACKEND": "django.core.cache.backends.redis.RedisCache",
+            "LOCATION": f"redis://{REDIS_HOST}:{REDIS_PORT}/{REDIS_DB_CACHE}",
+        }
     }
-}
+else:
+    CACHES = {"default": {"BACKEND": "django.core.cache.backends.locmem.LocMemCache"}}
 
 # опционально) для тестов, если Redis не работает
-try:
-    import redis
+# try:
+#     import redis
+#
+#     redis.from_url(CACHES["default"]["LOCATION"]).ping()
+# except Exception:
+#     print("⚠ Redis недоступен — кеширование отключено.")
+#     CACHE_ENABLED = False
 
-    redis.from_url(CACHES["default"]["LOCATION"]).ping()
-except Exception:
-    print("⚠ Redis недоступен — кеширование отключено.")
-    CACHE_ENABLED = False
+STATIC_URL = "/static/"
+STATIC_ROOT = os.path.join(BASE_DIR, "staticfiles")
+
+MEDIA_URL = "/media/"
+MEDIA_ROOT = os.path.join(BASE_DIR, "media")
+
+CACHE_ENABLED = os.getenv("CACHE_ENABLED", "0") == "1"
+CACHE_TTL = int(os.getenv("CACHE_TTL", "300"))
+
+if os.getenv("REDIS_CHECK_ENABLED", "0") == "1":
+    REDIS_HOST = os.getenv("REDIS_HOST", "redis")
+    REDIS_PORT = os.getenv("REDIS_PORT", "6379")
+    REDIS_DB_CACHE = os.getenv("REDIS_DB_CACHE", "1")
+
+    CACHES = {
+        "default": {
+            "BACKEND": "django.core.cache.backends.redis.RedisCache",
+            "LOCATION": f"redis://{REDIS_HOST}:{REDIS_PORT}/{REDIS_DB_CACHE}",
+        }
+    }
+else:
+    CACHES = {
+        "default": {"BACKEND": "django.core.cache.backends.locmem.LocMemCache"}
+    }
+CELERY_BROKER_URL = os.getenv("CELERY_BROKER_URL", f"redis://{REDIS_HOST}:{REDIS_PORT}/0")
+CELERY_RESULT_BACKEND = os.getenv("CELERY_RESULT_BACKEND", f"redis://{REDIS_HOST}:{REDIS_PORT}/0")
+
+CELERY_ACCEPT_CONTENT = ["json"]
+CELERY_TASK_SERIALIZER = "json"
+CELERY_RESULT_SERIALIZER = "json"
+CELERY_TIMEZONE = "Europe/Amsterdam"
