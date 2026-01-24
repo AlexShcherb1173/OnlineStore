@@ -39,7 +39,7 @@ jobs:
     runs-on: ubuntu-latest
     needs: [tests]
     # build+push только на push в main (не на PR)
-    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    if: github.event_name == 'push'
     steps:
       - uses: actions/checkout@v4
 
