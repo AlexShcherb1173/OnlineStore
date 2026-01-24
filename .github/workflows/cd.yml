@@ -2,7 +2,7 @@ name: CD - Build & Push to GHCR
 
 on:
   push:
-    branches: ["main", "feature"]
+    branches: ["main"]
     tags:
       - "v*.*.*"
 
@@ -12,7 +12,6 @@ permissions:
 
 env:
   REGISTRY: ghcr.io
-  IMAGE_BASE: ${{ github.repository }} # owner/repo в lowercase в registry на стороне Docker
 
 jobs:
   build-and-push:
@@ -21,15 +20,21 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Set tag
+      - name: Set tag and image base (lowercase)
         id: meta
+        shell: bash
         run: |
+          # tag: latest for branch pushes, or git tag for releases
           if [[ "${GITHUB_REF}" == refs/tags/* ]]; then
             TAG="${GITHUB_REF#refs/tags/}"
           else
             TAG="latest"
           fi
           echo "tag=$TAG" >> $GITHUB_OUTPUT
+
+          # repo in lowercase for GHCR/docker
+          IMAGE_BASE="$(echo '${{ github.repository }}' | tr '[:upper:]' '[:lower:]')"
+          echo "image_base=$IMAGE_BASE" >> $GITHUB_OUTPUT
 
       - name: Log in to GHCR
         uses: docker/login-action@v3
@@ -38,29 +43,26 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
-      # WEB image
       - name: Build & Push WEB
         uses: docker/build-push-action@v6
         with:
           context: .
           push: true
           tags: |
-            ${{ env.REGISTRY }}/${{ env.IMAGE_BASE }}/web:${{ steps.meta.outputs.tag }}
+            ${{ env.REGISTRY }}/${{ steps.meta.outputs.image_base }}/web:${{ steps.meta.outputs.tag }}
 
-      # CELERY image (same Dockerfile, different runtime command in compose)
       - name: Build & Push CELERY
         uses: docker/build-push-action@v6
         with:
           context: .
           push: true
           tags: |
-            ${{ env.REGISTRY }}/${{ env.IMAGE_BASE }}/celery:${{ steps.meta.outputs.tag }}
+            ${{ env.REGISTRY }}/${{ steps.meta.outputs.image_base }}/celery:${{ steps.meta.outputs.tag }}
 
-      # CELERY BEAT image
       - name: Build & Push CELERY-BEAT
         uses: docker/build-push-action@v6
         with:
           context: .
           push: true
           tags: |
-            ${{ env.REGISTRY }}/${{ env.IMAGE_BASE }}/celery-beat:${{ steps.meta.outputs.tag }}
+            ${{ env.REGISTRY }}/${{ steps.meta.outputs.image_base }}/celery-beat:${{ steps.meta.outputs.tag }}
