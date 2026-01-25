@@ -15,25 +15,17 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
-# Build paths inside the project like this: BASE_DIR / 'subdir'.
-# BASE_DIR = Path(__file__).resolve().parent.parent
+# Build paths
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
-# Quick-start development settings - unsuitable for production
-# See https://docs.djangoproject.com/en/5.2/howto/deployment/checklist/
-
-# SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = os.getenv("SECRET_KEY")
-
-# SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
-
-ALLOWED_HOSTS = ["*"]
+# SECURITY
+SECRET_KEY = os.getenv("SECRET_KEY", "unsafe-dev-secret-key")  # чтобы CI не падал
+DEBUG = os.getenv("DEBUG", "0") == "1"
+ALLOWED_HOSTS = os.getenv("ALLOWED_HOSTS", "*").split(",")
 
 AUTH_USER_MODEL = "users.User"
 
 # Application definition
-
 INSTALLED_APPS = [
     "django.contrib.admin",
     "django.contrib.auth",
@@ -75,104 +67,109 @@ TEMPLATES = [
 
 WSGI_APPLICATION = "config.wsgi.application"
 
-
-# DATABASES
-# https://docs.djangoproject.com/en/5.2/ref/settings/#databases
-# Загружаем переменные окружения из файла .env
-
+# ======================
+# DATABASE
+# ======================
 DATABASES = {
     "default": {
-        "ENGINE": "django.db.backends.postgresql_psycopg2",
-        "NAME": os.getenv("DATABASE_NAME"),
-        "USER": os.getenv("DATABASE_USER"),
-        "PASSWORD": os.getenv("DATABASE_PASSWORD"),
-        "HOST": os.getenv("DATABASE_HOST", default="127.0.0.1"),
-        "PORT": os.getenv("DATABASE_PORT", default="5432"),
+        # Django 5.x: предпочтительно "django.db.backends.postgresql"
+        # но оставляю совместимость с твоим вариантом.
+        "ENGINE": os.getenv("DB_ENGINE", "django.db.backends.postgresql"),
+        "NAME": os.getenv("POSTGRES_DB", "onlinestore"),
+        "USER": os.getenv("POSTGRES_USER", "onlinestore"),
+        "PASSWORD": os.getenv("POSTGRES_PASSWORD", "onlinestore"),
+        "HOST": os.getenv("POSTGRES_HOST", "127.0.0.1"),
+        "PORT": os.getenv("POSTGRES_PORT", "5432"),
     }
 }
+
 # Password validation
-# https://docs.djangoproject.com/en/5.2/ref/settings/#auth-password-validators
-
 AUTH_PASSWORD_VALIDATORS = [
-    {
-        "NAME": "django.contrib.auth.password_validation.UserAttributeSimilarityValidator",
-    },
-    {
-        "NAME": "django.contrib.auth.password_validation.MinimumLengthValidator",
-    },
-    {
-        "NAME": "django.contrib.auth.password_validation.CommonPasswordValidator",
-    },
-    {
-        "NAME": "django.contrib.auth.password_validation.NumericPasswordValidator",
-    },
+    {"NAME": "django.contrib.auth.password_validation.UserAttributeSimilarityValidator"},
+    {"NAME": "django.contrib.auth.password_validation.MinimumLengthValidator"},
+    {"NAME": "django.contrib.auth.password_validation.CommonPasswordValidator"},
+    {"NAME": "django.contrib.auth.password_validation.NumericPasswordValidator"},
 ]
-
 
 # Internationalization
-# https://docs.djangoproject.com/en/5.2/topics/i18n/
-
 LANGUAGE_CODE = "ru-ru"
-TIME_ZONE = "Europe/Moscow"
-
+TIME_ZONE = os.getenv("TIME_ZONE", "Europe/Moscow")
 USE_I18N = True
-
 USE_TZ = True
 
-
-# Static files (CSS, JavaScript, Images)
-# https://docs.djangoproject.com/en/5.2/howto/static-files/
-
+# ======================
+# STATIC / MEDIA
+# ======================
 STATIC_URL = "/static/"
-STATICFILES_DIRS = [
-    os.path.join(BASE_DIR, "static"),
-]
-# Default primary key field type
-# https://docs.djangoproject.com/en/5.2/ref/settings/#default-auto-field
-
-DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
+STATICFILES_DIRS = [os.path.join(BASE_DIR, "static")]
+STATIC_ROOT = os.path.join(BASE_DIR, "staticfiles")
 
 MEDIA_URL = "/media/"
 MEDIA_ROOT = os.path.join(BASE_DIR, "media")
 
-# === EMAIL CONFIGURATION ===
-EMAIL_BACKEND = os.getenv(
-    "EMAIL_BACKEND", "django.core.mail.backends.smtp.EmailBackend"
-)
+DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
+
+# ======================
+# EMAIL
+# ======================
+EMAIL_BACKEND = os.getenv("EMAIL_BACKEND", "django.core.mail.backends.smtp.EmailBackend")
 EMAIL_HOST = os.getenv("EMAIL_HOST", "smtp.mail.ru")
-EMAIL_PORT = int(os.getenv("EMAIL_PORT", 587))
+EMAIL_PORT = int(os.getenv("EMAIL_PORT", "587"))
 EMAIL_USE_TLS = os.getenv("EMAIL_USE_TLS", "True").lower() == "true"
 EMAIL_USE_SSL = os.getenv("EMAIL_USE_SSL", "False").lower() == "true"
-EMAIL_HOST_USER = os.getenv("EMAIL_HOST_USER")
-EMAIL_HOST_PASSWORD = os.getenv("EMAIL_HOST_PASSWORD")
-DEFAULT_FROM_EMAIL = os.getenv("DEFAULT_FROM_EMAIL", EMAIL_HOST_USER)
+EMAIL_HOST_USER = os.getenv("EMAIL_HOST_USER", "")
+EMAIL_HOST_PASSWORD = os.getenv("EMAIL_HOST_PASSWORD", "")
+DEFAULT_FROM_EMAIL = os.getenv("DEFAULT_FROM_EMAIL", EMAIL_HOST_USER or "no-reply@example.com")
 
-# 📬 Основной e-mail администратора для уведомлений
 ADMIN_EMAIL = os.getenv("ADMIN_EMAIL", "email@example.com")
 
 AUTHENTICATION_BACKENDS = [
-    "users.backends.EmailAuthBackend",  # наш email-backend
-    "django.contrib.auth.backends.ModelBackend",  # запасной
+    "users.backends.EmailAuthBackend",
+    "django.contrib.auth.backends.ModelBackend",
 ]
 
 LOGIN_REDIRECT_URL = "catalog:home"
 LOGOUT_REDIRECT_URL = "catalog:home"
 
-# включение/отключение кеша флагом
-CACHE_ENABLED = os.getenv("CACHE_ENABLED", "1").lower() in {"1", "true", "yes"}
-# конфигурация Redis
-CACHES = {
-    "default": {
-        "BACKEND": "django.core.cache.backends.redis.RedisCache",
-        "LOCATION": "redis://127.0.0.1:6379/1",
+# ======================
+# REDIS / CACHE
+# ======================
+# Эти переменные должны быть определены всегда (иначе Celery упадёт в CI)
+REDIS_HOST = os.getenv("REDIS_HOST", "redis")
+REDIS_PORT = int(os.getenv("REDIS_PORT", "6379"))
+REDIS_DB_CACHE = int(os.getenv("REDIS_DB_CACHE", "1"))
+REDIS_DB_CELERY = int(os.getenv("REDIS_DB_CELERY", "0"))
+
+CACHE_ENABLED = os.getenv("CACHE_ENABLED", "0") == "1"
+CACHE_TTL = int(os.getenv("CACHE_TTL", "300"))
+
+if CACHE_ENABLED:
+    CACHES = {
+        "default": {
+            "BACKEND": "django.core.cache.backends.redis.RedisCache",
+            "LOCATION": f"redis://{REDIS_HOST}:{REDIS_PORT}/{REDIS_DB_CACHE}",
+            "TIMEOUT": CACHE_TTL,
+        }
     }
-}
+else:
+    # В CI и без Redis — безопасный дефолт
+    CACHES = {"default": {"BACKEND": "django.core.cache.backends.locmem.LocMemCache"}}
 
-# опционально) для тестов, если Redis не работает
-try:
-    import redis
+# ======================
+# CELERY
+# ======================
+# Важно: Celery может работать и без Redis в CI, если задачи не запускаем.
+# Но настройки должны быть валидны.
+CELERY_BROKER_URL = os.getenv(
+    "CELERY_BROKER_URL",
+    f"redis://{REDIS_HOST}:{REDIS_PORT}/{REDIS_DB_CELERY}",
+)
+CELERY_RESULT_BACKEND = os.getenv(
+    "CELERY_RESULT_BACKEND",
+    f"redis://{REDIS_HOST}:{REDIS_PORT}/{REDIS_DB_CELERY}",
+)
 
-    redis.from_url(CACHES["default"]["LOCATION"]).ping()
-except Exception:
-    print("⚠ Redis недоступен — кеширование отключено.")
-    CACHE_ENABLED = False
+CELERY_ACCEPT_CONTENT = ["json"]
+CELERY_TASK_SERIALIZER = "json"
+CELERY_RESULT_SERIALIZER = "json"
+CELERY_TIMEZONE = os.getenv("CELERY_TIMEZONE", "Europe/Amsterdam")
